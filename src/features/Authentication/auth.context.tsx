@@ -1,0 +1,150 @@
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+
+import type { User } from '@supabase/supabase-js'
+import supabase from '../../utils/supabase'
+import type { RegisterDTO } from './Dto/RegisterDto'
+import type { LoginDTO } from './Dto/loginDTo'
+
+type AuthContextType = {
+  user: User | null
+  role: string | null
+  isValidated: boolean
+  googleSignIn: () => Promise<any>
+  signUp: (payload: RegisterDTO) => Promise<any>
+  signIn: (payload: LoginDTO) => Promise<any>
+  signOut: () => Promise<void>
+  loading: boolean
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null)
+  const [role, setRole] = useState<string | null>(null)
+  const [isValidated, setIsValidated] = useState<boolean>(true)
+  const [loading, setLoading] = useState(true)
+
+  const fetchUserData = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(
+          `
+          is_validated,
+          roles (
+            name
+          )
+        `,
+        )
+        .eq('id', userId)
+        .single()
+
+      if (error) {
+        console.error('Error fetching user data:', error)
+        return { role: 'member', isValidated: false }
+      }
+
+      return {
+        // @ts-ignore
+        role: data?.roles?.name || 'member',
+        isValidated: data?.is_validated || false
+      }
+    } catch (error) {
+      console.error('Error in fetchUserData:', error)
+      return { role: 'member', isValidated: false }
+    }
+  }
+
+  useEffect(() => {
+    // get current session
+    supabase.auth.getSession().then(({ data }) => {
+      const currentUser = data.session?.user ?? null
+      setUser(currentUser)
+      if (currentUser) {
+        fetchUserData(currentUser.id).then(res => {
+          setRole(res.role)
+          setIsValidated(res.isValidated)
+          setLoading(false)
+        })
+      } else {
+        setRole(null)
+        setIsValidated(false)
+        setLoading(false)
+      }
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+        if (currentUser) {
+          fetchUserData(currentUser.id).then(res => {
+            setRole(res.role)
+            setIsValidated(res.isValidated)
+          })
+        } else {
+          setRole(null)
+          setIsValidated(false)
+        }
+      },
+    )
+
+    return () => {
+      listener?.subscription.unsubscribe()
+    }
+  }, [])
+
+  const signUp = async (payload: RegisterDTO) => {
+    const { email, password, fullname, phone } = payload
+
+    // 1. Create user
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        data: {
+          fullname,
+          phone
+        }
+      }
+    })
+    if (error) return { error }
+
+    return { data }
+  }
+const googleSignIn = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+  })
+
+  if (error) return { error }
+  return { data }
+}
+  const signIn = (payload: LoginDTO) => {
+    const { email, password } = payload
+    return supabase.auth.signInWithPassword({ email, password })
+  }
+
+  const queryClient = useQueryClient()
+
+  const signOut = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    setRole(null)
+    setIsValidated(false)
+    queryClient.clear()
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, role, isValidated, googleSignIn, signUp, signIn, signOut, loading }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export const useAuth = () => {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+  return ctx
+}

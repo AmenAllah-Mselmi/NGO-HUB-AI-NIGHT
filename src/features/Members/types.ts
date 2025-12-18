@@ -1,0 +1,56 @@
+export type CotisationStatus = {
+    semester1: boolean;
+    semester2: boolean;
+}
+
+export type Role = string;
+
+
+
+export interface Complaint {
+    id: string;
+    member_id: string;
+    content: string;
+    status: 'pending' | 'resolved'; // simple status
+    created_at: string;
+}
+
+export interface Member {
+    id: string;
+    fullname: string;
+    email?: string;
+    phone?: string;
+    avatar_url?: string;
+    role: string;
+    
+    // Member specific fields
+    
+    points: number;
+    cotisation_status: boolean[];
+    is_validated: boolean;
+ 
+    
+    description?: string;
+   
+    complaints?: Complaint[];  
+    
+    // Timestamps
+    created_at?: string;
+    birth_date?: string;
+    is_banned?: boolean;
+}
+
+export interface ActivityLog {
+    id: string;
+    activity_name: string;
+    date: string;
+    points_earned: number;
+}
+
+export interface PointsHistoryEntry {
+    id: string;
+    points: number;
+    source_type: string;
+    description: string;
+    created_at: string;
+}

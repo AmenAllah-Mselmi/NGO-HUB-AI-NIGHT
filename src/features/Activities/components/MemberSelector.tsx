@@ -1,0 +1,120 @@
+import { Search, X, User, Check } from 'lucide-react'
+
+interface Member {
+  id: string
+  fullname: string
+}
+
+interface MemberSelectorProps {
+  members: Member[]
+  selectedMember: string
+  memberSearch: string
+  onSearchChange: (value: string) => void
+  onSelectMember: (id: string) => void
+  onClearSelection: () => void
+  excludeIds?: string[]
+}
+
+export default function MemberSelector({
+  members,
+  selectedMember,
+  memberSearch,
+  onSearchChange,
+  onSelectMember,
+  onClearSelection,
+  excludeIds = []
+}: MemberSelectorProps) {
+  const availableMembers = members.filter(m => !excludeIds.includes(m.id))
+  const filteredMembers = availableMembers.filter(m => 
+    m.fullname.toLowerCase().includes(memberSearch.toLowerCase())
+  )
+
+  const getInitials = (name: string) => 
+    name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+
+  return (
+    <div className="relative">
+      <label className="block text-sm font-medium text-gray-700 mb-2">Select Member *</label>
+      
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
+        <input
+          type="text"
+          value={memberSearch}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder={selectedMember ? members.find(m => m.id === selectedMember)?.fullname || "Search..." : "Search members..."}
+          className={`w-full rounded-xl shadow-sm text-sm py-3 pl-10 pr-10 border-2 transition-all duration-200 focus:outline-none ${
+            selectedMember 
+              ? 'border-green-300 bg-green-50 focus:border-green-500' 
+              : 'border-gray-200 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100'
+          }`}
+        />
+        {selectedMember && (
+          <button
+            type="button"
+            onClick={onClearSelection}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Dropdown List */}
+      {!selectedMember && (
+        <div 
+          className="mt-2 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden"
+          style={{ maxHeight: '240px' }}
+        >
+          <div className="overflow-y-auto" style={{ maxHeight: '240px' }}>
+            {filteredMembers.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">
+                <User className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm">No members found</p>
+                {memberSearch && <p className="text-xs mt-1">Try a different search</p>}
+              </div>
+            ) : (
+              filteredMembers.map((m, index) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => onSelectMember(m.id)}
+                  className={`w-full flex items-center gap-3 p-3 text-left transition-all duration-150 hover:bg-gradient-to-r hover:from-yellow-50 hover:to-transparent ${
+                    index !== 0 ? 'border-t border-gray-100' : ''
+                  }`}
+                >
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-(--color-mySecondary) to-(--color-myPrimary) flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                    {getInitials(m.fullname)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{m.fullname}</p>
+                    <p className="text-xs text-gray-500">Click to select</p>
+                  </div>
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-200 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-gray-300" />
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Selected Display */}
+      {selectedMember && (
+        <div className="mt-2 flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+            {getInitials(members.find(m => m.id === selectedMember)?.fullname || '')}
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-gray-900">
+              {members.find(m => m.id === selectedMember)?.fullname}
+            </p>
+            <p className="text-xs text-green-600 font-medium">✓ Selected</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

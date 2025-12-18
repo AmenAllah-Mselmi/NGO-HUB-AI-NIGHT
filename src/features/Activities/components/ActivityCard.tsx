@@ -1,0 +1,110 @@
+import { Calendar, MapPin, Video, DollarSign, ArrowRight } from 'lucide-react'
+import type { Activity } from '../models/Activity'
+import { Link } from 'react-router-dom'
+
+interface ActivityCardProps {
+  activity: Activity
+}
+
+export default function ActivityCard({ activity }: ActivityCardProps) {
+  const startDate = new Date(activity.activity_begin_date)
+  
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    }).format(date)
+  }
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'event': return 'bg-(--color-myPrimary)  text-white'
+      case 'meeting': return 'bg-blue-100 text-blue-800'
+      case 'formation': return 'bg-orange-100 text-orange-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getPlaceholderImage = (type: string) => {
+    // If no image, return a nice gradient based on type activity
+    switch (type) {
+        case 'event': return 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=1000'
+        case 'meeting': return 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=1000'
+        case 'formation': return 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=1000'
+        default: return 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=1000'
+    }
+}
+
+
+  return (
+    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full border border-gray-100">
+      {/* Image Container */}
+      <div className="relative h-48 overflow-hidden">
+        <img
+          src={activity.image_url || getPlaceholderImage(activity.type)}
+          alt={activity.name}
+          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+        />
+        <div className="absolute top-4 right-4">
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${getTypeColor(activity.type)}`}>
+            {activity.type}
+          </span>
+        </div>
+        {activity.is_paid && (
+             <div className="absolute top-4 left-4">
+             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 flex items-center gap-1">
+               <DollarSign className="w-3 h-3" />
+               {activity.is_paid && activity.price! > 0 ? `$${activity.price}` : 'Paid'}
+             </span>
+           </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-5 flex-1 flex flex-col">
+        <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2" title={activity.name}>
+          {activity.name}
+        </h3>
+        
+        <div className="space-y-3 mb-6 flex-1">
+          <p className="text-gray-600 text-sm line-clamp-3">
+            {activity.description || 'No description provided.'}
+          </p>
+          
+          <div className="flex items-center text-sm text-gray-500 gap-2">
+            <Calendar className="w-4 h-4 text-blue-500" />
+            <span>{formatDate(startDate)}</span>
+          </div>
+
+          <div className="flex items-center text-sm text-gray-500 gap-2">
+            {activity.is_online ? (
+              <Video className="w-4 h-4 text-green-500" />
+            ) : (
+              <MapPin className="w-4 h-4 text-red-500" />
+            )}
+            <span className="truncate">
+              {activity.is_online ? 'Online Event' : (activity.activity_address || 'Location TBD')}
+            </span>
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+           <div className="text-sm font-medium text-gray-500">
+             {activity.activity_points > 0 ? `${activity.activity_points} Points` : ''}
+           </div>
+           
+           <Link 
+            to={`/activities/${activity.id}/GET`} 
+             className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-semibold text-sm transition-colors"
+           >
+             View Details <ArrowRight className="w-4 h-4" />
+           </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
