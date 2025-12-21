@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import type { JSX } from 'react'
 import { useAuth } from '../features/Authentication/auth.context'
+import UnauthorizedPage from './UnauthorizedPage'
 
 export default function ProtectedRoute({
   children,
@@ -41,7 +42,7 @@ export default function ProtectedRoute({
 
   // Role based access
   if (allowedRoles.length > 0 && role && !allowedRoles.includes(role.toLowerCase())) {
-     return <Navigate to='/unauthorized' replace />
+     return <UnauthorizedPage />
   }
 
   return children

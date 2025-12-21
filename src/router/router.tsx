@@ -2,6 +2,8 @@
 import { createBrowserRouter } from 'react-router-dom'
 import Login from '../features/Authentication/pages/LoginPage'
 import Register from '../features/Authentication/pages/register'
+import ForgotPassword from '../features/Authentication/pages/ForgotPasswordPage'
+import ResetPassword from '../features/Authentication/pages/ResetPasswordPage'
 import Home from '../features/Home/pages/home'
 import RhAdvisorPage from '../features/Authentication/pages/RhAdvisorPage'
 import UnauthorizedPage from '../Global_Components/UnauthorizedPage'
@@ -44,15 +46,25 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+    path: '/forgot-password',
+    element: (
+      <ProtectedRoute requireGuest={true}>
+        <ForgotPassword />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/reset-password',
+    element: (
+      <ResetPassword />
+    ),
+  },
 
   // Activities routes
   {
     path: '/activities',
-    element: (
-      <ProtectedRoute>
-        <AllActivitiesPage />
-      </ProtectedRoute>
-    ),
+    element: <AllActivitiesPage />,
   },
   {
     path: '/activities/new',
@@ -72,7 +84,10 @@ export const router = createBrowserRouter([
   },
   {
     path: '/activities/:id/GET',
-    element: <ActivityDetails />,
+    element: (
+        <ActivityDetails />
+    
+    ),
   },
 
   // Teams routes

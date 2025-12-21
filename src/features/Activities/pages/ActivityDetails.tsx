@@ -7,13 +7,18 @@ import { toast } from 'sonner'
 import ParticipationSection from '../components/ParticipationSection'
 import Navbar from '../../../Global_Components/navBar'
 import type { Category } from '../../Members/services/members.service'
+import { useAuth } from '../../Authentication/auth.context'
+import { EXECUTIVE_LEVELS } from '../../../utils/roles'
 
 export default function ActivityDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user, role } = useAuth()
   const [activity, setActivity] = useState<Activity | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+
+  const isExecutive = EXECUTIVE_LEVELS.includes(role?.toLowerCase() || '')
 
   useEffect(() => {
     if (id) {
@@ -83,22 +88,24 @@ export default function ActivityDetails() {
               alt={activity.name}
               className="w-full h-full object-cover"
             />
-            <div className="absolute top-4 right-4 flex gap-2">
-                 <Link
-                  to={`/activities/${activity.id}/edit`} 
-                  className="p-2 bg-white/90 backdrop-blur-sm rounded-full text-blue-600 hover:text-blue-700 shadow-sm transition-transform hover:scale-105"
-                  title="Edit Activity"
-                >
-                  <Edit className="w-5 h-5" />
-                </Link>
-                <button
-                  onClick={handleDelete}
-                  className="p-2 bg-white/90 backdrop-blur-sm rounded-full text-red-600 hover:text-red-700 shadow-sm transition-transform hover:scale-105"
-                  title="Delete Activity"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-            </div>
+            {isExecutive && (
+              <div className="absolute top-4 right-4 flex gap-2">
+                   <Link
+                    to={`/activities/${activity.id}/edit`} 
+                    className="p-2 bg-white/90 backdrop-blur-sm rounded-full text-blue-600 hover:text-blue-700 shadow-sm transition-transform hover:scale-105"
+                    title="Edit Activity"
+                  >
+                    <Edit className="w-5 h-5" />
+                  </Link>
+                  <button
+                    onClick={handleDelete}
+                    className="p-2 bg-white/90 backdrop-blur-sm rounded-full text-red-600 hover:text-red-700 shadow-sm transition-transform hover:scale-105"
+                    title="Delete Activity"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+              </div>
+            )}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 md:p-8">
                 <span className="inline-block px-3 py-1 bg-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-full mb-3">
                   {activity.type}
@@ -238,9 +245,11 @@ export default function ActivityDetails() {
                 )}
 
                  {/* Participations Section */}
-                 <section>
-                    <ParticipationSection activityId={activity.id} activityPoints={activity.activity_points} />
-                 </section>
+                 {user && (
+                   <section>
+                      <ParticipationSection activityId={activity.id} activityPoints={activity.activity_points} />
+                   </section>
+                 )}
             </div>
 
             {/* Sidebar Details */}

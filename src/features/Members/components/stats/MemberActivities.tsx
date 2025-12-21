@@ -509,7 +509,7 @@ const ActivityCard = ({ item }: { item: ActivityHistoryItem }) => {
     const participantCount = item.activity.activity_participants?.[0]?.count || 0;
     
     return (
-        <Link to={`/activities/${item.activity.id}/GET`} className="block">
+        <Link to={`/activities/${item.activity.id}`} className="block">
             <div className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors relative group">
                 <div className="flex gap-4">
                     {/* Visual Indicator Line */}

@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [])
 
   const signUp = async (payload: RegisterDTO) => {
-    const { email, password, fullname, phone } = payload
+    const { email, password, fullname, phone, birth_date } = payload
 
     // 1. Create user
     const { data, error } = await supabase.auth.signUp({ 
@@ -105,7 +105,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       options: {
         data: {
           fullname,
-          phone
+          phone,
+          birth_date
         }
       }
     })

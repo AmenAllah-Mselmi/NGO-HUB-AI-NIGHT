@@ -80,44 +80,61 @@ const navigate = useNavigate()
   return (
     <AuthForm title='Welcome Back' onSubmit={handleSubmit} buttonText='Login' link='register' text='Don t Have an account?' linkText='Create one'>
       {/* Email */}
-      <input
-        name='email'
-        placeholder='Email'
-        className='border p-3 w-full rounded mb-1'
-        onChange={handleChange}
-      />
-      {errors.email && (
-        <p className='text-red-500 text-sm mb-2'>{errors.email}</p>
-      )}
+      <div>
+        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Email Address</label>
+        <input
+          name='email'
+          type="email"
+          placeholder='name@company.com'
+          className='w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all'
+          onChange={handleChange}
+        />
+        {errors.email && (
+          <p className='text-red-500 text-xs font-bold mt-1 ml-1'>{errors.email}</p>
+        )}
+      </div>
 
       {/* Password */}
-      <input
-        type='password'
-        name='password'
-        placeholder='Password'
-        className='border p-3 w-full rounded mb-1'
-        onChange={handleChange}
-      />
-      {errors.password && (
-        <p className='text-red-500 text-sm mb-2'>{errors.password}</p>
-      )}
+      <div>
+        <div className="flex items-center justify-between mb-1 ml-1">
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Password</label>
+          <button 
+            type="button"
+            onClick={() => navigate('/forgot-password')}
+            className="text-xs font-bold text-(--color-myPrimary) hover:underline"
+          >
+            Forgot Password?
+          </button>
+        </div>
+        <input
+          type='password'
+          name='password'
+          placeholder='••••••••'
+          className='w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all'
+          onChange={handleChange}
+        />
+        {errors.password && (
+          <p className='text-red-500 text-xs font-bold mt-1 ml-1'>{errors.password}</p>
+        )}
+      </div>
 
       {/* OR Divider */}
-      <div className='flex items-center my-4 gap-2'>
-        <div className='flex-1 h-px bg-gray-300' />
-        <span className='text-gray-500 text-sm'>OR</span>
-        <div className='flex-1 h-px bg-gray-300' />
+      <div className='flex items-center my-6 gap-3'>
+        <div className='flex-1 h-px bg-gray-100' />
+        <span className='text-gray-300 text-[10px] font-black tracking-widest'>OR</span>
+        <div className='flex-1 h-px bg-gray-100' />
       </div>
 
       {/* GOOGLE LOGIN BUTTON */}
       <button
         type='button'
         onClick={googleSignIn}
-        className='w-full py-3 border rounded flex justify-center gap-2 hover:bg-gray-100'
+        className='w-full py-4 bg-white border border-gray-100 rounded-2xl flex justify-center items-center gap-3 font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-200 transition-all active:scale-95 shadow-sm'
       >
         <img
           src='https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg'
           className='w-5 h-5'
+          alt="Google"
         />
         Continue with Google
       </button>

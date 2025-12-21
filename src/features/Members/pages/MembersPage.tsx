@@ -3,13 +3,18 @@ import Navbar from "../../../Global_Components/navBar";
 import MembersGrowthChart from "../components/stats/MembersGrowthChart";
 import MembersList from "../components/MembersList";
 import MembersStatistics from "../components/stats/MembersStatistics";
+import ComplaintsOverview from "../../../Global_Components/ComplaintsOverview";
 import { useMembers, useAllPointsHistory } from "../hooks/useMembers";
 import AddMemberModal from "../components/AddMemberModal";
 import { UserPlus, Users, ShieldCheck, User } from "lucide-react";
+import { useAuth } from "../../Authentication/auth.context";
+import { EXECUTIVE_LEVELS } from "../../../utils/roles";
 
 export default function MembersPage() {
     const { data: members = [], isLoading: membersLoading } = useMembers();
     const { data: history = [], isLoading: historyLoading } = useAllPointsHistory();
+    const { role } = useAuth();
+    const isExecutive = EXECUTIVE_LEVELS.includes(role?.toLowerCase() || "");
     const [searchTerm, setSearchTerm] = useState("");
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -86,18 +91,31 @@ export default function MembersPage() {
                 onClose={() => setIsAddModalOpen(false)} 
             />
 
+            {/* Leadership Tools Section */}
+            {isExecutive && (
+                <div className="mb-10">
+                    <div className="flex items-center gap-2 mb-4 px-1">
+                        <ShieldCheck className="w-5 h-5 text-amber-600" />
+                        <h2 className="text-xl font-bold text-gray-900">Leadership Oversight</h2>
+                    </div>
+                    <ComplaintsOverview />
+                </div>
+            )}
+
             {/* General Statistics */}
             {!loading && members.length > 0 && <MembersStatistics members={members} />}
 
             {/* Growth Chart */}
-            <MembersGrowthChart history={history} />
+            <div className="mb-8">
+                <MembersGrowthChart history={history} />
+            </div>
 
             {/* Search and Filter */}
             <div className="mb-6">
                 <input
                     type="text"
                     placeholder="Search members..."
-                    className="p-2 border border-gray-300 rounded-md w-full"
+                    className="p-2 border border-gray-300 rounded-md w-full shadow-sm px-4 py-3"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />

@@ -42,44 +42,58 @@ export const activityService = {
   /**
    * Fetch a single activity by ID
    */
- getActivityById: async (id: string): Promise<Activity> => {
+  getActivityById: async (id: string): Promise<Activity> => {
+    console.log('[activityService] Fetching activity with ID:', id);
+
     // 1. Fetch parent (base activity fields)
     const { data: parent, error: parentErr } = await supabase
       .from('activities')
       .select('*, activity_participants(count)')
       .eq('id', id)
-      .single()
+      .maybeSingle()
 
-    if (parentErr) throw parentErr
+    if (parentErr) {
+        console.error('[activityService] Parent fetch error:', parentErr);
+        throw parentErr;
+    }
 
-    const type: ActivityType = parent.type
+    if (!parent) {
+      console.warn('[activityService] Activity not found for ID:', id);
+      throw new Error(`Activity not found: ${id}`);
+    }
+
+    const type: ActivityType = parent.type;
 
     // 2. Detect correct child table
     const childTable =
       type === 'event' ? 'events' :
       type === 'meeting' ? 'meetings' :
-      'formations'
+      'formations';
 
     // 3. Fetch child table row
     const { data: child, error: childErr } = await supabase
       .from(childTable)
       .select('*')
       .eq('id', id)
-      .single()
+      .maybeSingle()
 
-    if (childErr) throw childErr
+    if (childErr) {
+        console.error('[activityService] Child fetch error:', childErr);
+        throw childErr;
+    }
 
     // 4. Merge parent + child into final typed object
-    const merged = { ...parent, ...child }
+    // If child is missing (shouldn't happen but let's be safe), use empty object
+    const merged = { ...parent, ...(child || {}) };
 
     // 5. Cast to correct TypeScript type using discriminated union
     if (type === 'event') {
-      return merged as EventActivity
+      return merged as EventActivity;
     }
     if (type === 'meeting') {
-      return merged as MeetingActivity
+      return merged as MeetingActivity;
     }
-    return merged as FormationActivity
+    return merged as FormationActivity;
   },
   /**
    * Create a new activity

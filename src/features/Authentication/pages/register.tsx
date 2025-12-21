@@ -12,6 +12,7 @@ const registerSchema = z.object({
   phone: z.string().min(6, 'Phone number is required'),
   email: z.string().email('Invalid email format'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  birth_date: z.string().min(1, 'Birthday is required'),
   device_id: z.string(),
 })
 
@@ -24,6 +25,7 @@ export default function Register() {
     phone: '',
     email: '',
     password: '',
+    birth_date: '',
     device_id: navigator.userAgent,
   })
 
@@ -91,57 +93,84 @@ export default function Register() {
     >
       {/* General Error Message */}
       {errors.general && (
-        <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-2xl mb-4'>
-          <p className='text-sm'>{errors.general}</p>
+        <div className='bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl mb-4 font-bold text-sm'>
+          {errors.general}
         </div>
       )}
 
-      {/* Full Name */}
-      <input
-        name='fullname'
-        placeholder='Full name'
-        className='border p-3 w-full rounded-2xl mb-3'
-        onChange={handleChange}
-      />
-      {errors.fullname && (
-        <p className='text-red-500 text-sm mb-2'>{errors.fullname}</p>
-      )}
+      {/* Grid for Name & Phone */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Full Name</label>
+          <input
+            name='fullname'
+            placeholder='John Doe'
+            className='w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm'
+            onChange={handleChange}
+          />
+          {errors.fullname && (
+            <p className='text-red-500 text-[10px] font-bold mt-1 ml-1'>{errors.fullname}</p>
+          )}
+        </div>
 
-      {/* Phone */}
-      <input
-        name='phone'
-        placeholder='Phone'
-        className='border p-3 w-full rounded-2xl mb-3'
-        onChange={handleChange}
-      />
-      {errors.phone && (
-        <p className='text-red-500 text-sm mb-2'>{errors.phone}</p>
-      )}
+        <div>
+          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Phone</label>
+          <input
+            name='phone'
+            placeholder='+216 ...'
+            className='w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm'
+            onChange={handleChange}
+          />
+          {errors.phone && (
+            <p className='text-red-500 text-[10px] font-bold mt-1 ml-1'>{errors.phone}</p>
+          )}
+        </div>
+      </div>
 
       {/* Email */}
-      <input
-        name='email'
-        placeholder='Email'
-        className='border p-3 w-full rounded-2xl mb-3'
-        onChange={handleChange}
-      />
-      {errors.email && (
-        <p className='text-red-500 text-sm mb-2'>{errors.email}</p>
-      )}
+      <div>
+        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Email Address</label>
+        <input
+          name='email'
+          type="email"
+          placeholder='name@company.com'
+          className='w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm'
+          onChange={handleChange}
+        />
+        {errors.email && (
+          <p className='text-red-500 text-[10px] font-bold mt-1 ml-1'>{errors.email}</p>
+        )}
+      </div>
 
-      {/* Password */}
-      <input
-        type='password'
-        name='password'
-        placeholder='Password'
-        className='border p-3 w-full rounded-2xl mb-3'
-        onChange={handleChange}
-      />
+      {/* Grid for Password & Birthday */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Password</label>
+          <input
+            type='password'
+            name='password'
+            placeholder='••••••••'
+            className='w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm'
+            onChange={handleChange}
+          />
+          {errors.password && (
+            <p className='text-red-500 text-[10px] font-bold mt-1 ml-1'>{errors.password}</p>
+          )}
+        </div>
 
-      {errors.password && (
-        <p className='text-red-500 text-sm mb-2'>{errors.password}</p>
-      )}
-
+        <div>
+          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Birthday</label>
+          <input
+            type='date'
+            name='birth_date'
+            className='w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm'
+            onChange={handleChange}
+          />
+          {errors.birth_date && (
+            <p className='text-red-500 text-[10px] font-bold mt-1 ml-1'>{errors.birth_date}</p>
+          )}
+        </div>
+      </div>
     </AuthForm>
   )
 }

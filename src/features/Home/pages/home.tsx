@@ -10,6 +10,7 @@ import type { ActivityFilterDTO } from '../../Activities/dto/ActivityDTOs'
 import TopPerformers from '../components/TopPerformers'
 import TeamsOverview from '../components/TeamsOverview'
 import PendingCandidates from '../components/PendingCandidates'
+import ComplaintsOverview from '../../../Global_Components/ComplaintsOverview'
 import { useAuth } from '../../Authentication/auth.context'
 import { EXECUTIVE_LEVELS } from '../../../utils/roles'
 
@@ -60,9 +61,15 @@ const Home = () => {
         {/* Dashboard Widgets Section (Visible to logged in users) */}
         {user && (
           <section className='py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full'>
-            <div className={`grid grid-cols-1 md:grid-cols-2 ${isExecutive ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-6`}>
+            <div className="flex items-center gap-2 mb-6 px-1">
+                 <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Management Dashboard</h2>
+                 <div className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full uppercase tracking-widest border border-blue-200">Internal</div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               <TopPerformers />
               <TeamsOverview />
+              {isExecutive && <ComplaintsOverview />}
               {isExecutive && <PendingCandidates />}
             </div>
           </section>
