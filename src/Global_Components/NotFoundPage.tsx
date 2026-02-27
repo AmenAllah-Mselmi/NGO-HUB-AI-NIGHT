@@ -58,7 +58,7 @@ export default function NotFoundPage() {
         {/* Modern Footer Detail */}
         <div className="mt-16 pt-8 border-t border-gray-100">
           <p className="text-gray-400 text-sm font-medium tracking-widest uppercase">
-            JCI - Leadership & Growth
+            NGO Hub — Empowering Organizations
           </p>
         </div>
       </div>

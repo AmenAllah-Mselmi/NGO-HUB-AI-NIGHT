@@ -49,7 +49,7 @@ export default function RhAdvisorPage() {
         
         <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 text-center">
           <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
-            Junior Chamber International
+            NGO Hub
           </p>
         </div>
       </div>
