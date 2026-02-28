@@ -12,7 +12,7 @@ interface ActivitySidebarProps {
 export default function ActivitySidebar({ activity, categories }: ActivitySidebarProps) {
   const { t, i18n } = useTranslation()
   const startDate = new Date(activity.activity_begin_date)
-  const endDate = new Date(activity.activity_end_date)
+  const endDate = activity.activity_end_date ? new Date(activity.activity_end_date) : null
 
   return (
     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 space-y-4 text-start shadow-sm sticky top-24">
@@ -27,7 +27,7 @@ export default function ActivitySidebar({ activity, categories }: ActivitySideba
       <DetailItem 
         icon={<Clock className="w-5 h-5 text-gray-400 mt-0.5" />}
         label={t('activities.endDate')}
-        value={`${endDate.toLocaleDateString(i18n.language)} ${t('activities.at')} ${endDate.toLocaleTimeString(i18n.language, {hour: '2-digit', minute:'2-digit'})}`}
+        value={endDate ? `${endDate.toLocaleDateString(i18n.language)} ${t('activities.at')} ${endDate.toLocaleTimeString(i18n.language, {hour: '2-digit', minute:'2-digit'})}` : t('activities.noEndDate')}
       />
 
       <div className="flex items-start gap-3">

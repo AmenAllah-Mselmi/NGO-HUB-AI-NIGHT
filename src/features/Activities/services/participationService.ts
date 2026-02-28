@@ -153,7 +153,7 @@ export const participationService = {
     let activitiesMap = new Map<string, any>()
     if (activityIds.length) {
       // Prefer club_events
-      const { data: ces } = await supabase.from('club_events').select('*').in('id', activityIds)
+      const { data: ces } = await supabase.from('club_events').select('*').in('id', activityIds);
       (ces || []).forEach((ce: any) => {
         activitiesMap.set(ce.id, {
           id: ce.id,
@@ -169,7 +169,7 @@ export const participationService = {
       // Fallback to activities for any missing ids
       const missing = activityIds.filter(id => !activitiesMap.has(id))
       if (missing.length) {
-        const { data: legacy } = await supabase.from('activities').select('id, name, type, activity_points, activity_begin_date, image_url').in('id', missing)
+        const { data: legacy } = await supabase.from('activities').select('id, name, type, activity_points, activity_begin_date, image_url').in('id', missing);
         (legacy || []).forEach((a: any) => activitiesMap.set(a.id, a))
       }
     }

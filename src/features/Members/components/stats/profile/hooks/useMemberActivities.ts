@@ -48,6 +48,7 @@ export const useMemberActivities = (memberId: string) => {
         activity_address: ce.location,
         is_online: false,
         online_link: null,
+        type: 'event',
         activity_begin_date: ce.start_at,
         activity_end_date: ce.end_at,
         leader_id: ce.created_by,

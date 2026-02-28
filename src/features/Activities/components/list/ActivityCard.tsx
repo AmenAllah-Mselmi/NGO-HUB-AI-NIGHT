@@ -62,7 +62,7 @@ export default function ActivityCard({ activity }: ActivityCardProps) {
               ? `${t('activities.generalAssembly')} - ${t(`activities.${(activity as any).assembly_type}`)}`
               : t(`profile.${activity.type}`)}
           </span>
-          {new Date(activity.activity_end_date) < new Date() && (
+          {activity.activity_end_date && new Date(activity.activity_end_date) < new Date() && (
             <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-red-500 text-white shadow-sm animate-pulse">
               {t('activities.expired')}
             </span>

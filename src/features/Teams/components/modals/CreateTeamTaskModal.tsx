@@ -7,12 +7,6 @@ import StarRating from "../../../Activities/components/common/StarRating";
 import { deleteStorageFile } from "../../../../utils/uploadHelpers";
 import { createTask, assignTaskToMember, completeAllTaskAssignments, uploadTaskAttachment } from "../../../Tasks/services/tasks.service";
 
-interface TeamMemberOption {
-    id: string; // member_id
-    fullname: string;
-    avatar_url?: string;
-}
-
 import { getTeamMilestones } from '../../services/teams.service';
 import type { TeamMilestone } from '../../types';
 

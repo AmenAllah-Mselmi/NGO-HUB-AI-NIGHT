@@ -5,30 +5,30 @@ export type TrainingType = 'official_session' | 'important_training' | 'just_tra
 export interface ActivityBase {
   id: string
   name: string
-  description?: string
-  activity_address?: string
+  description?: string | null
+  activity_address?: string | null
   is_online: boolean
-  online_link?: string
+  online_link?: string | null
   activity_begin_date: string
-  activity_end_date: string
-  leader_id: string
+  activity_end_date?: string | null
+  leader_id?: string | null
   activity_points: number
   is_paid: boolean
-  price?: number
+  price?: number | null
   is_public: boolean
-  image_url?: string
-  video_url?: string
-  recap_images?: string[]
-  recap_videos?: string[]
-  created_at: string
+  image_url?: string | null
+  video_url?: string | null
+  recap_images?: string[] | null
+  recap_videos?: string[] | null
+  created_at?: string | null
   // Count from optional join
-  activity_participants?: { count: number }[]
+  activity_participants?: { count: number }[] | null
 }
 
 // Event-specific properties
 export interface EventActivity extends ActivityBase {
   type: 'event'
-  registration_deadline?: string
+  registration_deadline?: string | null
 }
 
 // Meeting-specific properties
@@ -46,7 +46,7 @@ export interface FormationActivity extends ActivityBase {
   type: 'formation'
   trainer_name?: string
   course_attachment?: string // URL to course materials
-  registration_deadline?: string // Formations can also have registration deadlines
+  registration_deadline?: string | null // Formations can also have registration deadlines
   training_type?: TrainingType
   // Not for formations
 

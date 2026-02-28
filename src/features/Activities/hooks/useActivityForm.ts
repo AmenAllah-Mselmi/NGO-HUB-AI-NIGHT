@@ -110,7 +110,7 @@ export function useActivityForm(): UseActivityFormReturn {
         const activity = await fetchActivityById(id)
         if (!activity) return
 
-        const formatDate = (isoDate: string) => new Date(isoDate).toISOString().slice(0, 16)
+        const formatDate = (isoDate?: string | null) => isoDate ? new Date(isoDate).toISOString().slice(0, 16) : ''
 
         reset({
           name: activity.name,
@@ -123,7 +123,7 @@ export function useActivityForm(): UseActivityFormReturn {
           activity_end_date: formatDate(activity.activity_end_date),
           activity_points: activity.activity_points,
           is_paid: activity.is_paid,
-          price: activity.price,
+          price: activity.price ?? undefined,
           is_public: activity.is_public,
           image_url: activity.image_url || '',
           video_url: activity.video_url || '',

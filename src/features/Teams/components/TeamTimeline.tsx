@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Clock, CheckCircle2, ChevronRight, Plus, Pencil, Trash2, Milestone } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Pencil, Trash2, Milestone } from 'lucide-react';
 import type { TeamMilestone } from '../types';
 import { getTeamMilestones, createTeamMilestone, updateTeamMilestone, deleteTeamMilestone } from '../services/teams.service';
 import { toast } from 'sonner';
@@ -158,7 +158,7 @@ export default function TeamTimeline({ teamId, canManage }: TeamTimelineProps) {
                 </div>
             ) : (
                 <div className="relative border-l-2 border-gray-100 ml-3 md:ml-6 space-y-8 pb-4">
-                    {milestones.map((m, idx) => {
+                    {milestones.map((m) => {
                         const isExpired = m.due_date && m.status !== 'completed' && new Date(m.due_date) < new Date(new Date().setHours(0, 0, 0, 0));
 
                         let dotColor = "bg-gray-300 border-white";
