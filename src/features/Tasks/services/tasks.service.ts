@@ -64,7 +64,7 @@ export const createTask = async (task: Omit<Task, 'id' | 'created_at'>): Promise
         .insert(task)
         .select()
         .single();
-    
+
     if (error) {
         console.error('Error creating task:', error);
         throw error;
@@ -111,7 +111,7 @@ export const unassignTaskFromMember = async (memberId: string, taskId: string): 
 
 // Convenience: Create Task and Assign in one go
 export const createAndAssignTask = async (
-    memberId: string, 
+    memberId: string,
     taskData: Omit<Task, 'id' | 'created_at'>,
     trackingType: 'manual' | 'subtasks'
 ): Promise<MemberTask | null> => {
@@ -164,10 +164,33 @@ export const deleteTask = async (id: string): Promise<void> => {
         throw error;
     }
 };
-export const completeAllTaskAssignments = async (taskId: string, subtasks: SubTaskDefinition[] = [], starRating?: number): Promise<void> => {
+export const logTaskHours = async (taskId: string, memberId: string, hours: number, description?: string): Promise<void> => {
+    // Write to the task_time_logs table, which trigger 'add_logged_hours_to_profile'
+    const { error } = await supabase
+        .from('task_time_logs')
+        .insert({
+            task_id: taskId,
+            member_id: memberId,
+            hours_logged: hours,
+            description: description || 'Task logged hours'
+        });
+
+    if (error) {
+        console.error('Error logging task hours:', error);
+        throw error;
+    }
+};
+
+export const completeAllTaskAssignments = async (taskId: string, subtasks: SubTaskDefinition[] = [], starRating?: number, logged_hours?: number): Promise<void> => {
     // 1. Update all member_tasks for this task
     const subtaskIds = subtasks.map(sh => sh.id);
-    
+
+    // 2. Fetch assignees so we can log their hours individually if requested
+    const { data: assignments } = await supabase
+        .from('member_tasks')
+        .select('member_id')
+        .eq('task_id', taskId);
+
     const { error } = await supabase
         .from('member_tasks')
         .update({
@@ -177,6 +200,18 @@ export const completeAllTaskAssignments = async (taskId: string, subtasks: SubTa
             star_rating: starRating
         })
         .eq('task_id', taskId);
+
+    // Also update parent task logged_hours field for summary UI
+    if (logged_hours !== undefined) {
+        await supabase.from('tasks').update({ logged_hours }).eq('id', taskId);
+
+        // Distribute or log hours per assignee
+        if (assignments && assignments.length > 0 && logged_hours > 0) {
+            const hoursPerPerson = Number((logged_hours / assignments.length).toFixed(1));
+            const logPromises = assignments.map(a => logTaskHours(taskId, a.member_id, hoursPerPerson, 'Completed task division'));
+            await Promise.allSettled(logPromises);
+        }
+    }
 
     if (error) {
         console.error(`Error completing assignments for task ${taskId}:`, error);

@@ -683,12 +683,7 @@ create policy "Club roles: board manage" on club_roles for all
 
 -- Club members policies
 drop policy if exists "Club members: read" on club_members;
-create policy "Club members: read" on club_members for select
-  using (
-    member_id = auth.uid()
-    or exists (select 1 from clubs c where c.id = club_id and c.president_id = auth.uid())
-    or public.is_club_accepted_member(club_id, auth.uid())
-  );
+create policy "Club members: read" on club_members for select using (true);
 
 drop policy if exists "Club members: request join" on club_members;
 create policy "Club members: request join" on club_members for insert
@@ -808,14 +803,7 @@ alter table club_comments enable row level security;
 drop policy if exists "Club posts: public read if global or club member" on club_posts;
 drop policy if exists "Club posts: read" on club_posts;
 create policy "Club posts: read" on club_posts for select using (
-  club_id is null
-  or exists (
-    select 1 from club_members cm
-    where cm.club_id = club_posts.club_id and cm.member_id = auth.uid() and cm.status = 'accepted'
-  )
-  or exists (
-    select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true
-  )
+  auth.role() = 'authenticated'
 );
 
 -- Posts: INSERT
@@ -851,16 +839,7 @@ create policy "Club posts: delete" on club_posts for delete using (
 drop policy if exists "Club comments: public read if global or club member" on club_comments;
 drop policy if exists "Club comments: read" on club_comments;
 create policy "Club comments: read" on club_comments for select using (
-  exists (
-    select 1 from club_posts cp where cp.id = club_comments.post_id and (
-      cp.club_id is null
-      or exists (
-        select 1 from club_members cm
-        where cm.club_id = cp.club_id and cm.member_id = auth.uid() and cm.status = 'accepted'
-      )
-    )
-  )
-  or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+  auth.role() = 'authenticated'
 );
 
 -- Comments: INSERT
@@ -868,15 +847,6 @@ drop policy if exists "Club comments: authenticated create" on club_comments;
 drop policy if exists "Club comments: create" on club_comments;
 create policy "Club comments: create" on club_comments for insert with check (
   author_id = auth.uid()
-  and exists (
-    select 1 from club_posts cp where cp.id = post_id and (
-      cp.club_id is null
-      or exists (
-        select 1 from club_members cm
-        where cm.club_id = cp.club_id and cm.member_id = auth.uid() and cm.status = 'accepted'
-      )
-    )
-  )
 );
 
 -- Comments: UPDATE

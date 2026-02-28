@@ -16,6 +16,29 @@ export interface Poste {
   name: string;
 }
 
+export interface MemberExperience {
+  id: string;
+  member_id: string;
+  title: string;
+  organization: string;
+  description?: string;
+  start_date?: string;
+  end_date?: string;
+  is_current: boolean;
+  created_at?: string;
+}
+
+export interface MemberProject {
+  id: string;
+  member_id: string;
+  title: string;
+  description?: string;
+  url?: string;
+  image_url?: string;
+  completion_date?: string;
+  created_at?: string;
+}
+
 export interface Member {
   id: string;
   fullname: string;
@@ -41,6 +64,10 @@ export interface Member {
   created_at?: string;
   birth_date?: string;
   is_banned?: boolean;
+
+  // Smart Profiles & Impact
+  supported_causes?: string[];
+  total_volunteering_hours?: number;
 
   // Professional & Availability
   job_title?: string;

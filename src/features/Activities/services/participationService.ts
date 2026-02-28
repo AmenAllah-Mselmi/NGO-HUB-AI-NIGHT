@@ -51,30 +51,40 @@ export const participationService = {
 
     if (error) throw error
 
-    // Fetch activity details for points and logging
-    const { data: activity } = await supabase
-      .from('activities')
-      .select('activity_points, name')
-      .eq('id', participation.activity_id)
-      .single()
+    // Fetch activity details (prefer club_events) for points and logging
+    const { data: ce } = await supabase.from('club_events').select('title, start_at').eq('id', participation.activity_id).maybeSingle()
+    if (ce) {
+      // club_events doesn't have activity_points → default to 0
+      await pointsService.triggerPointsHistory(
+        participation.user_id,
+        0,
+        `Participation recorded for event: ${ce.title}`,
+        'activity'
+      )
+    } else {
+      // Fallback to legacy activities table when present
+      const { data: activity } = await supabase
+        .from('activities')
+        .select('activity_points, name')
+        .eq('id', participation.activity_id)
+        .single()
 
-    if (activity) {
-      if (activity.activity_points > 0 && !participation.is_temp) {
-        // Award points for confirmed participation via pointsService (handles profile update)
-        await pointsService.triggerPointsHistory(
-          participation.user_id,
-          activity.activity_points,
-          `Participation in activity: ${activity.name}`,
-          'activity'
-        )
-      } else {
-        // Log interest (0 points)
-        await pointsService.triggerPointsHistory(
-          participation.user_id,
-          0,
-          `Marked interested in activity: ${activity.name}`,
-          'activity'
-        )
+      if (activity) {
+        if (activity.activity_points > 0 && !participation.is_temp) {
+          await pointsService.triggerPointsHistory(
+            participation.user_id,
+            activity.activity_points,
+            `Participation in activity: ${activity.name}`,
+            'activity'
+          )
+        } else {
+          await pointsService.triggerPointsHistory(
+            participation.user_id,
+            0,
+            `Marked interested in activity: ${activity.name}`,
+            'activity'
+          )
+        }
       }
     }
 
@@ -131,28 +141,48 @@ export const participationService = {
    * Get member's participated activities with rate and notes
    */
   getMemberParticipations: async (memberId: string) => {
-    const { data, error } = await supabase
+    const { data: parts, error } = await supabase
       .from('activity_participants')
-      .select(`
-        id,
-        rate,
-        notes,
-        is_interested,
-        registered_at,
-        activity:activities(
-          id,
-          name,
-          type,
-          activity_points,
-          activity_begin_date,
-          image_url,
-          activity_participants(count)
-        )
-      `)
+      .select('id, rate, notes, is_interested, registered_at, activity_id')
       .eq('user_id', memberId)
       .order('registered_at', { ascending: false })
 
     if (error) throw error
-    return data || []
+
+    const activityIds = Array.from(new Set((parts || []).map((p: any) => p.activity_id))).filter(Boolean)
+    let activitiesMap = new Map<string, any>()
+    if (activityIds.length) {
+      // Prefer club_events
+      const { data: ces } = await supabase.from('club_events').select('*').in('id', activityIds)
+      (ces || []).forEach((ce: any) => {
+        activitiesMap.set(ce.id, {
+          id: ce.id,
+          name: ce.title,
+          type: 'event',
+          activity_points: 0,
+          activity_begin_date: ce.start_at,
+          image_url: ce.image_url,
+          activity_participants: []
+        })
+      })
+
+      // Fallback to activities for any missing ids
+      const missing = activityIds.filter(id => !activitiesMap.has(id))
+      if (missing.length) {
+        const { data: legacy } = await supabase.from('activities').select('id, name, type, activity_points, activity_begin_date, image_url').in('id', missing)
+        (legacy || []).forEach((a: any) => activitiesMap.set(a.id, a))
+      }
+    }
+
+    const result = (parts || []).map((p: any) => ({
+      id: p.id,
+      rate: p.rate,
+      notes: p.notes,
+      is_interested: p.is_interested,
+      registered_at: p.registered_at,
+      activity: activitiesMap.get(p.activity_id) || null
+    }))
+
+    return result
   }
 }

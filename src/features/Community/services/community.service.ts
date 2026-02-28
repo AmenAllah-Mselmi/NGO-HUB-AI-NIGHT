@@ -80,14 +80,55 @@ export async function createPost(payload: {
     content: string;
     image_url?: string;
 }) {
-    const { data, error } = await supabase
+    // Ensure minimal profile exists for the author (may fix RLS failures when profile is missing)
+    try {
+        await supabase.from('profiles').upsert({ id: payload.author_id }).throwOnError();
+    } catch (e) {
+        // ignore upsert errors — we'll still try insert and surface the real error
+    }
+
+    // Insert then try to return the enriched post (with author, club, comments)
+    const { data: inserted, error: insertErr } = await supabase
         .from("club_posts")
         .insert([payload])
-        .select()
+        .select('id')
         .single();
 
-    if (error) throw error;
-    return data;
+    if (insertErr) {
+        // If RLS error, try to give a helpful message and rethrow
+        if (String(insertErr.message || '').toLowerCase().includes('row-level security') || String(insertErr.message || '').toLowerCase().includes('violates row-level')) {
+            insertErr.message = 'Insertion blocked by Row-Level Security (missing profile or insufficient club membership). Ensure you are signed in and a member of the club (or post globally with club_id = null).';
+        }
+        throw insertErr;
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('club_posts')
+            .select(`
+                *,
+                author:profiles(fullname, avatar_url),
+                club:clubs(name, logo_url),
+                comments:club_comments(
+                    id, content, created_at, author_id,
+                    author:profiles(fullname, avatar_url)
+                )
+            `)
+            .eq('id', inserted.id)
+            .maybeSingle();
+
+        if (error) throw error;
+        return data;
+    } catch (e) {
+        // If RLS prevents the rich select, return the raw inserted row
+        const { data: raw, error: rawErr } = await supabase
+            .from('club_posts')
+            .select('*')
+            .eq('id', inserted.id)
+            .maybeSingle();
+        if (rawErr) throw rawErr;
+        return raw;
+    }
 }
 
 export async function addComment(payload: {
@@ -95,14 +136,31 @@ export async function addComment(payload: {
     author_id: string;
     content: string;
 }) {
-    const { data, error } = await supabase
-        .from("club_comments")
+    const { data: inserted, error: insertErr } = await supabase
+        .from('club_comments')
         .insert([payload])
-        .select()
+        .select('id')
         .single();
 
-    if (error) throw error;
-    return data;
+    if (insertErr) throw insertErr;
+
+    try {
+        const { data, error } = await supabase
+            .from('club_comments')
+            .select(`*, author:profiles(fullname, avatar_url)`)
+            .eq('id', inserted.id)
+            .maybeSingle();
+        if (error) throw error;
+        return data;
+    } catch (e) {
+        const { data: raw, error: rawErr } = await supabase
+            .from('club_comments')
+            .select('*')
+            .eq('id', inserted.id)
+            .maybeSingle();
+        if (rawErr) throw rawErr;
+        return raw;
+    }
 }
 
 export async function deletePost(postId: string) {

@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../features/Authentication/auth.context'
 import logo from '../assets/logo.png'
 import { useState, useRef, useEffect } from 'react'
-import { Menu, X, LogOut, Home, Calendar, Users, Target, User, PieChart, Building2, MessageSquare } from 'lucide-react'
+import { Menu, X, LogOut, Home, Calendar, Users, Target, User, PieChart, Building2, MessageSquare, Trophy, Briefcase } from 'lucide-react'
 import { EXECUTIVE_LEVELS } from '../utils/roles'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
@@ -91,10 +91,23 @@ export default function Sidebar() {
           )}
 
           {user && (
-            <Link to="/teams" className={mobileTabClass('/teams')}>
-              <Target className="w-5 h-5" />
-              <span className="text-[10px] font-bold uppercase tracking-tighter">{t('nav.teams')}</span>
+            <Link to="/gamification" className={mobileTabClass('/gamification')}>
+              <Trophy className="w-5 h-5" />
+              <span className="text-[10px] font-bold uppercase tracking-tighter">Rewards</span>
             </Link>
+          )}
+
+          {user && (
+            <>
+              <Link to="/teams" className={mobileTabClass('/teams')}>
+                <Target className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-tighter">{t('nav.teams')}</span>
+              </Link>
+              <Link to="/projects" className={mobileTabClass('/projects')}>
+                <Briefcase className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-tighter">{t('nav.projects', 'Projects')}</span>
+              </Link>
+            </>
           )}
 
           {user ? (
@@ -200,6 +213,10 @@ export default function Sidebar() {
             <MessageSquare className="w-4 h-4" />
             <span className="flex-1">Community Feed</span>
           </NavLink>
+          <NavLink to="/gamification" className={navLinkClass}>
+            <Trophy className="w-4 h-4" />
+            <span className="flex-1">Rewards Hub</span>
+          </NavLink>
 
           {user && (
             <>
@@ -218,6 +235,10 @@ export default function Sidebar() {
               <NavLink to="/teams" className={navLinkClass}>
                 <Target className="w-4 h-4" />
                 <span className="flex-1">{t('nav.teams')}</span>
+              </NavLink>
+              <NavLink to="/projects" className={navLinkClass}>
+                <Briefcase className="w-4 h-4" />
+                <span className="flex-1">{t('nav.projects', 'Projects Hub')}</span>
               </NavLink>
               <NavLink to="/me" className={navLinkClass}>
                 <User className="w-4 h-4" />

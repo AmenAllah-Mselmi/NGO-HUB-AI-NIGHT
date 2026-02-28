@@ -56,10 +56,12 @@ export const jpsService = {
         const cutoff   = ((customDate ?? new Date()) < endDate ? (customDate ?? new Date()) : endDate).toISOString();
 
         // Step 1: Fetch activities in period → resolve participations safely
-        const { data: acts } = await supabase.from('activities')
-            .select('id, type, formations(*), meetings(*), general_assemblies(*)')
-            .gte('activity_begin_date', startISO).lte('activity_begin_date', cutoff);
+        // Prefer club_events as the activity source (mapped to event-like activities)
+        const { data: ces } = await supabase.from('club_events')
+            .select('id, title, start_at')
+            .gte('start_at', startISO).lte('start_at', cutoff);
 
+        const acts = (ces || []).map((ce: any) => ({ id: ce.id, type: 'event', activity_begin_date: ce.start_at, title: ce.title }));
         const actMap = new Map((acts ?? []).map(a => [a.id, a]));
         let participations: any[] = [];
         if (acts?.length) {
@@ -76,8 +78,8 @@ export const jpsService = {
             supabase.from('profiles').select('cotisation_status, created_at, points').eq('id', memberId).single(),
         ]);
         const effectiveStart = (member?.created_at ?? startISO) > startISO ? member!.created_at : startISO;
-        const [{ count: totalActivities }, { count: complaintsCount }] = await Promise.all([
-            supabase.from('activities').select('*', { count: 'exact', head: true }).gte('activity_begin_date', effectiveStart).lte('activity_begin_date', cutoff),
+            const [{ count: totalActivities }, { count: complaintsCount }] = await Promise.all([
+            supabase.from('club_events').select('*', { count: 'exact', head: true }).gte('start_at', effectiveStart).lte('start_at', cutoff),
             supabase.from('complaints').select('*', { count: 'exact', head: true }).eq('member_id', memberId).eq('status', 'resolved').gte('created_at', startISO).lte('created_at', endISO),
         ]);
 

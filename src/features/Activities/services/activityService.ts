@@ -10,39 +10,91 @@ export const activityService = {
    * Core Activity CRUD
    */
   getActivities: async (filters?: ActivityFilterDTO) => {
+    // Prefer club_events as the primary read source. Map club_events rows to Activity shape.
     let query = supabase
-      .from('activities')
-      .select('*, activity_participants(count)')
-      .order('activity_begin_date', { ascending: false })
+      .from('club_events')
+      .select('*')
+      .order('start_at', { ascending: false })
 
     if (filters) {
-      if (filters.type) {
-        query = query.eq('type', filters.type)
-      }
-      if (filters.is_online !== undefined) {
-        query = query.eq('is_online', filters.is_online)
-      }
-      if (filters.is_paid !== undefined) {
-        query = query.eq('is_paid', filters.is_paid)
-      }
-      if (filters.is_public !== undefined) {
-        query = query.eq('is_public', filters.is_public)
-      }
+      // club_events does not have the same columns as the old `activities` table.
+      // Support date range filters where possible.
       if (filters.startDate) {
-        query = query.gte('activity_begin_date', filters.startDate)
+        query = query.gte('start_at', filters.startDate)
       }
       if (filters.endDate) {
-        query = query.lte('activity_end_date', filters.endDate)
+        query = query.lte('end_at', filters.endDate)
       }
     }
 
-    const { data, error } = await query
-    
+    const { data: clubEvents, error } = await query
     if (error) throw error
-    return data as Activity[]
+
+    // Map club_events -> Activity (EventActivity) with sensible defaults
+    const mapped = (clubEvents || []).map((ce: any) => ({
+      id: ce.id,
+      name: ce.title,
+      description: ce.description,
+      activity_address: ce.location,
+      is_online: false,
+      online_link: null,
+      activity_begin_date: ce.start_at,
+      activity_end_date: ce.end_at,
+      leader_id: ce.created_by,
+      activity_points: 0,
+      is_paid: false,
+      price: null,
+      is_public: true,
+      image_url: ce.image_url,
+      video_url: null,
+      recap_images: null,
+      recap_videos: null,
+      created_at: ce.created_at,
+      type: 'event',
+      registration_deadline: null,
+      activity_participants: []
+    }))
+
+    return mapped as Activity[]
   },
 
   getActivityById: async (id: string): Promise<Activity> => {
+    // First try to fetch from club_events and map to Activity
+    const { data: ce, error: ceErr } = await supabase
+      .from('club_events')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (ceErr) throw ceErr
+    if (ce) {
+      const mapped: any = {
+        id: ce.id,
+        name: ce.title,
+        description: ce.description,
+        activity_address: ce.location,
+        is_online: false,
+        online_link: null,
+        activity_begin_date: ce.start_at,
+        activity_end_date: ce.end_at,
+        leader_id: ce.created_by,
+        activity_points: 0,
+        is_paid: false,
+        price: null,
+        is_public: true,
+        image_url: ce.image_url,
+        video_url: null,
+        recap_images: null,
+        recap_videos: null,
+        created_at: ce.created_at,
+        type: 'event',
+        registration_deadline: null,
+        activity_participants: []
+      }
+      return mapped as Activity
+    }
+
+    // Fallback to legacy activities table for compatibility
     const { data: parent, error: parentErr } = await supabase
       .from('activities')
       .select('*, activity_participants(count)')

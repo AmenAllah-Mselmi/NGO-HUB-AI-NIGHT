@@ -35,6 +35,7 @@ import NGOCreatePage from "../features/NGO/pages/NGOCreatePage";
 import NGODetailsPage from "../features/NGO/pages/NGODetailsPage";
 import NotFoundPage from "../Global_Components/NotFoundPage";
 import { EXECUTIVE_LEVELS } from "../utils/roles";
+import GamificationHub from "../features/Gamification/pages/GamificationHub";
 
 export const router = createBrowserRouter([
   {
@@ -55,6 +56,16 @@ export const router = createBrowserRouter([
       { path: "/pending-validation", element: <RhAdvisorPage /> },
       { path: "/unauthorized", element: <UnauthorizedPage /> },
       { path: "/teams/share/:token", element: <TeamSharePage /> },
+
+      // Gamification route
+      {
+        path: "/gamification",
+        element: (
+          <ProtectedRoute>
+            <GamificationHub />
+          </ProtectedRoute>
+        ),
+      },
 
       // Guest-only routes (login/register)
       {

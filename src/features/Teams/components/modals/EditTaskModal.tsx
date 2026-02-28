@@ -24,7 +24,7 @@ interface EditTaskModalProps {
 
 export default function EditTaskModal({ open, onClose, task, onUpdated, teamMembers = [], isAdmin = false }: EditTaskModalProps) {
     const [loading, setLoading] = useState(false);
-    
+
     // Editable state
     const [title, setTitle] = useState(task.title);
     const [status, setStatus] = useState<'todo' | 'in_progress' | 'completed'>(task.status || 'todo');
@@ -34,11 +34,14 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
     const [deadline, setDeadline] = useState(task.deadline || "");
     const [starRating, setStarRating] = useState<number>(task.star_rating || 3);
     const [headerColor, setHeaderColor] = useState(task.header_color || "");
-    const [attachments, setAttachments] = useState<{name: string, url: string}[]>(task.attachments || []);
+    const [attachments, setAttachments] = useState<{ name: string, url: string }[]>(task.attachments || []);
     const [uploading, setUploading] = useState(false);
     const [pendingUploads, setPendingUploads] = useState<string[]>([]);
     const [description, setDescription] = useState(task.description || "");
-    
+    const [milestoneId, setMilestoneId] = useState(task.milestone_id || "");
+    const [loggedHours, setLoggedHours] = useState(task.logged_hours || 0);
+    const [milestones, setMilestones] = useState<any[]>([]);
+
     // Read-only / Immutable state
     const [points, setPoints] = useState(task.points);
     const [trackingType, setTrackingType] = useState<'manual' | 'subtasks'>(task.subtasks && task.subtasks.length > 0 ? 'subtasks' : 'manual');
@@ -59,7 +62,14 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
             setHeaderColor(task.header_color || "");
             setAttachments(task.attachments || []);
             setStarRating(task.star_rating || 3);
-            
+            setMilestoneId(task.milestone_id || "");
+            setLoggedHours(task.logged_hours || 0);
+
+            // Fetch team milestones if task belongs to a team
+            if (task.team_id) {
+                import('../../services/teams.service').then(m => m.getTeamMilestones(task.team_id!)).then(setMilestones).catch(console.error);
+            }
+
             // Fetch assignments to sync selection
             loadAssignments();
         }
@@ -86,7 +96,7 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
     };
 
     const toggleAssignee = (id: string) => {
-        setAssigneeIds(prev => 
+        setAssigneeIds(prev =>
             prev.includes(id) ? prev.filter(mid => mid !== id) : [...prev, id]
         );
     };
@@ -95,7 +105,7 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
         e.preventDefault();
         try {
             setLoading(true);
-            
+
             await updateTask(task.id, {
                 title,
                 status,
@@ -106,13 +116,15 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                 star_rating: starRating,
                 header_color: headerColor,
                 attachments: attachments,
-                subtasks: subtasks
+                subtasks: subtasks,
+                milestone_id: milestoneId || undefined,
+                logged_hours: Number(loggedHours)
             });
 
             // 2. Reconcile Assignments
             const currentAssignments = await getTaskAssignments(task.id);
             const currentIds = currentAssignments.map((a: any) => a.member_id);
-            
+
             const toAdd = assigneeIds.filter(id => !currentIds.includes(id));
             const toRemove = currentIds.filter(id => !assigneeIds.includes(id));
 
@@ -145,12 +157,12 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
             <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center p-6 border-b">
                     <div className="flex items-center gap-4">
-                        <div 
+                        <div
                             className="w-10 h-10 rounded-2xl border-2 border-white shadow-lg flex items-center justify-center relative overflow-hidden transition-all hover:scale-105 active:scale-95"
                             style={{ backgroundColor: headerColor || '#f3f4f6' }}
                         >
-                            <input 
-                                type="color" 
+                            <input
+                                type="color"
                                 className="absolute inset-0 opacity-0 cursor-pointer scale-150"
                                 value={headerColor || '#f3f4f6'}
                                 onChange={(e) => setHeaderColor(e.target.value)}
@@ -169,10 +181,10 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-                
+
                 <form onSubmit={handleSubmit} className="flex flex-col md:flex-row max-h-[85vh]">
                     {/* Left: Metadata & Status */}
-                     <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+                    <div className="flex-1 p-6 space-y-4 overflow-y-auto">
                         <div>
                             <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Theme Palette</label>
                             <div className="flex flex-wrap gap-2 mb-4">
@@ -196,8 +208,8 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                                 ))}
                                 <div className="relative w-6 h-6 rounded-full border-2 border-white shadow-inner overflow-hidden group">
                                     <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-[10px] text-gray-400 group-hover:bg-gray-100 cursor-pointer">+</div>
-                                    <input 
-                                        type="color" 
+                                    <input
+                                        type="color"
                                         className="absolute inset-0 opacity-0 cursor-pointer scale-150"
                                         value={headerColor || '#3b82f6'}
                                         onChange={(e) => setHeaderColor(e.target.value)}
@@ -206,8 +218,8 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                             </div>
 
                             <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Task Name</label>
-                            <input 
-                                type="text" 
+                            <input
+                                type="text"
                                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-gray-900"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
@@ -216,7 +228,7 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
 
                         <div>
                             <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Status</label>
-                            <select 
+                            <select
                                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
                                 value={status}
                                 onChange={(e) => setStatus(e.target.value as any)}
@@ -229,7 +241,7 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
 
                         <div>
                             <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Complexity (JPS Multiplier)</label>
-                            <select 
+                            <select
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium ${!isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 value={complexity}
                                 onChange={(e) => isAdmin && setComplexity(e.target.value as any)}
@@ -244,8 +256,8 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Start Date</label>
-                                <input 
+                                <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1 leading-tight">Start Date</label>
+                                <input
                                     type="date"
                                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                                     value={startDate}
@@ -253,8 +265,8 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Deadline</label>
-                                <input 
+                                <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1 leading-tight">Deadline</label>
+                                <input
                                     type="date"
                                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-red-600 font-bold"
                                     value={deadline}
@@ -263,12 +275,39 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                             </div>
                         </div>
 
+                        {/* Milestones & Hours */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-black uppercase tracking-widest text-emerald-600 mb-1 leading-tight">Linked Milestone</label>
+                                <select
+                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium"
+                                    value={milestoneId}
+                                    onChange={(e) => setMilestoneId(e.target.value)}
+                                >
+                                    <option value="">None</option>
+                                    {milestones.map(m => (
+                                        <option key={m.id} value={m.id}>{m.title}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black uppercase tracking-widest text-blue-600 mb-1 leading-tight">Logged Hours</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold text-blue-700"
+                                    value={loggedHours}
+                                    onChange={(e) => setLoggedHours(Number(e.target.value))}
+                                />
+                            </div>
+                        </div>
+
                         <div className={`p-4 rounded-xl border space-y-2 ${isAdmin ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
                             <label className={`block text-xs font-black uppercase tracking-widest ${isAdmin ? 'text-amber-700' : 'text-gray-400'}`}>Performance Rating</label>
                             <div className="flex items-center gap-4">
-                                <StarRating 
-                                    value={starRating} 
-                                    onChange={(val: number) => isAdmin && setStarRating(val)} 
+                                <StarRating
+                                    value={starRating}
+                                    onChange={(val: number) => isAdmin && setStarRating(val)}
                                     disabled={!isAdmin}
                                 />
                                 <span className={`text-[10px] font-bold italic ${isAdmin ? 'text-amber-600' : 'text-gray-400'}`}>
@@ -278,13 +317,13 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                             <div>
+                            <div>
                                 <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Points (Fixed)</label>
                                 <div className="px-3 py-2 bg-gray-50 border rounded-lg text-sm text-gray-500 font-medium">
                                     {points} pts
                                 </div>
                             </div>
-                             <div>
+                            <div>
                                 <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Method (Fixed)</label>
                                 <div className="px-3 py-2 bg-gray-50 border rounded-lg text-sm text-gray-500 font-medium capitalize">
                                     {trackingType}
@@ -294,7 +333,7 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
 
                         <div>
                             <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Description</label>
-                            <textarea 
+                            <textarea
                                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-xs font-medium min-h-[80px]"
                                 placeholder="Refine the strategic description..."
                                 value={description}
@@ -303,21 +342,21 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                         </div>
 
                         <div className="space-y-3">
-                             <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between">
                                 <label className="block text-xs font-black uppercase tracking-widest text-gray-400">Activity Checklist</label>
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={() => setSubtasks([...subtasks, { id: crypto.randomUUID(), text: "New Action" }])}
                                     className="text-[10px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest"
                                 >
                                     + Add Item
                                 </button>
-                             </div>
+                            </div>
                             <div className="space-y-2">
                                 {subtasks.map((st, idx) => (
                                     <div key={st.id} className="flex gap-2 items-center">
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             className="flex-1 px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-medium focus:ring-2 focus:ring-blue-500 outline-none"
                                             value={st.text}
                                             onChange={(e) => {
@@ -326,8 +365,8 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                                                 setSubtasks(newSub);
                                             }}
                                         />
-                                        <button 
-                                            type="button" 
+                                        <button
+                                            type="button"
                                             onClick={() => setSubtasks(subtasks.filter(s => s.id !== st.id))}
                                             className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
                                         >
@@ -341,10 +380,10 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
 
                         <div className="pt-4 border-t border-gray-100 space-y-4">
                             <label className="block text-xs font-black uppercase tracking-widest text-gray-400">Mission Resources</label>
-                            
+
                             <div className="relative group">
-                                <input 
-                                    type="file" 
+                                <input
+                                    type="file"
                                     id="edit-task-file-upload-new"
                                     className="hidden"
                                     multiple
@@ -354,7 +393,7 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                                             try {
                                                 setUploading(true);
                                                 const { uploadTaskAttachment } = await import("../../../Tasks/services/tasks.service");
-                                                
+
                                                 const newAttachments = [...attachments];
                                                 const newPending = [...pendingUploads];
                                                 for (const file of files) {
@@ -362,7 +401,7 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                                                     newAttachments.push({ name: file.name, url });
                                                     newPending.push(url);
                                                 }
-                                                
+
                                                 setAttachments(newAttachments);
                                                 setPendingUploads(newPending);
                                                 toast.success(`${files.length} resource(s) added`);
@@ -375,7 +414,7 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                                         }
                                     }}
                                 />
-                                <label 
+                                <label
                                     htmlFor="edit-task-file-upload-new"
                                     className={`flex flex-col items-center justify-center gap-2 p-6 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
@@ -401,15 +440,15 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                                                     <span className="text-[8px] font-black uppercase tracking-tighter text-gray-400 px-2 text-center truncate w-full">{att.name}</span>
                                                 </div>
                                             )}
-                                            
+
                                             {/* Overlays */}
                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                                                 <div className="flex gap-2 font-black">
                                                     <a href={att.url} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white text-gray-900 rounded-lg shadow-lg hover:scale-110 transition-transform">
                                                         <Check className="w-3.5 h-3.5" />
                                                     </a>
-                                                    <button 
-                                                        type="button" 
+                                                    <button
+                                                        type="button"
                                                         onClick={() => setAttachments(attachments.filter((_, i) => i !== idx))}
                                                         className="p-1.5 bg-red-500 text-white rounded-lg shadow-lg hover:scale-110 transition-transform"
                                                     >
@@ -432,18 +471,18 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                                 <UserPlus className="w-3 h-3" /> Assign To
                             </h3>
                         </div>
-                        
+
                         <div className="flex-1 overflow-y-auto p-2 space-y-1">
                             {teamMembers.map(m => {
                                 const isSelected = assigneeIds.includes(m.id);
                                 return (
-                                    <div 
+                                    <div
                                         key={m.id}
                                         onClick={() => isAdmin && toggleAssignee(m.id)}
                                         className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${isSelected ? 'bg-white border-blue-200 shadow-sm' : 'border-transparent hover:bg-gray-100'} ${!isAdmin ? 'cursor-default opacity-80' : 'cursor-pointer'}`}
                                     >
                                         <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-[10px] font-bold text-gray-600 overflow-hidden">
-                                            {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full object-cover" /> : m.fullname.substring(0,2).toUpperCase()}
+                                            {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full object-cover" /> : m.fullname.substring(0, 2).toUpperCase()}
                                         </div>
                                         <span className="text-xs font-medium text-gray-700 grow truncate">{m.fullname}</span>
                                         {isSelected && <Check className="w-3 h-3 text-blue-600" />}
@@ -454,9 +493,9 @@ export default function EditTaskModal({ open, onClose, task, onUpdated, teamMemb
                         </div>
 
                         <div className="p-4 border-t bg-white sticky bottom-0 flex flex-col gap-2">
-                             <button 
-                                type="submit" 
-                                disabled={loading} 
+                            <button
+                                type="submit"
+                                disabled={loading}
                                 className="w-full py-2 bg-gray-900 text-white rounded-lg text-sm font-bold hover:bg-gray-800 disabled:opacity-50 shadow-md"
                             >
                                 {loading ? 'Saving...' : 'Update Task'}

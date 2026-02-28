@@ -97,10 +97,10 @@ begin
 end; $$;
 
 -- RLS
-alter table ngo_unit_types enable row level security;
-alter table ngo_units enable row level security;
-alter table ngo_roles enable row level security;
-alter table ngo_members enable row level security;
+-- alter table ngo_unit_types enable row level security;
+-- alter table ngo_units enable row level security;
+-- alter table ngo_roles enable row level security;
+-- alter table ngo_members enable row level security;
 
 -- Unit types: members read, admins manage
 drop policy if exists "NGO unit types: read" on ngo_unit_types;

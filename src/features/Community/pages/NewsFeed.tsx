@@ -37,22 +37,45 @@ export default function NewsFeed() {
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
     /* ── Queries & Mutations ──────────────────────── */
+    const { loading: authLoading } = useAuth();
     const { data: posts = [], isLoading } = useQuery({
         queryKey: ["global-news-feed"],
         queryFn: getGlobalNewsFeed,
+        enabled: authLoading === false // wait until auth initialization completes to avoid RLS join errors
     });
 
     const createPostMutation = useMutation({
         mutationFn: ({ content, image_url }: { content: string; image_url?: string }) =>
             createPost({ club_id: null, author_id: user!.id, content, image_url }),
+        // Optimistic UI: prepend a temporary post while waiting for server
+        onMutate: async ({ content, image_url }: { content: string; image_url?: string }) => {
+            await queryClient.cancelQueries({ queryKey: ["global-news-feed"] });
+            const previous = queryClient.getQueryData<unknown[]>(["global-news-feed"]);
+            const tempId = typeof crypto !== 'undefined' && (crypto as any).randomUUID ? (crypto as any).randomUUID() : `temp-${Date.now()}`;
+            const optimisticPost = {
+                id: tempId,
+                club_id: null,
+                author_id: user!.id,
+                content,
+                image_url,
+                is_pinned: false,
+                created_at: new Date().toISOString(),
+                author: { fullname: user!.user_metadata?.fullname || user!.email?.split('@')[0], avatar_url: user!.user_metadata?.avatar_url }
+            };
+            queryClient.setQueryData(["global-news-feed"], (old: any) => [optimisticPost, ...(old || [])]);
+            return { previous };
+        },
+        onError: (err: any, _vars, context: any) => {
+            queryClient.setQueryData(["global-news-feed"], context?.previous);
+            toast.error(err?.message || 'Failed to post');
+        },
+        onSettled: () => queryClient.invalidateQueries({ queryKey: ["global-news-feed"] }),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["global-news-feed"] });
             setNewPostContent("");
             setSelectedImage(null);
             setComposerFocused(false);
             toast.success("Post published!");
-        },
-        onError: (err: any) => toast.error(err.message),
+        }
     });
 
     const commentMutation = useMutation({

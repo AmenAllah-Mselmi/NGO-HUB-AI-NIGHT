@@ -58,8 +58,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (insertError) {
           console.error("Failed to auto-generate profile:", insertError);
+          return { role: 'member', poste: null, isValidated: false };
         }
-        return { role: 'member', poste: null, isValidated: false };
+
+        // Re-fetch roles/postes after upserting profile
+        const { data: newData } = await supabase
+          .from('profiles')
+          .select('is_validated, roles(name), postes(name)')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+        return {
+          // @ts-ignore
+          role: newData?.roles?.name || 'member',
+          // @ts-ignore
+          poste: newData?.postes?.name || null,
+          isValidated: newData?.is_validated || false
+        };
       }
 
       return {
@@ -86,6 +101,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setPoste(res.poste)
           setIsValidated(res.isValidated)
           setLoading(false)
+          queryClient.invalidateQueries()
         })
       } else {
         setRole(null)
@@ -104,11 +120,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setRole(res.role)
             setPoste(res.poste)
             setIsValidated(res.isValidated)
+            queryClient.invalidateQueries()
           })
         } else {
           setRole(null)
           setPoste(null)
           setIsValidated(false)
+          queryClient.clear()
         }
       },
     )

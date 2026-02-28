@@ -14,6 +14,8 @@ import EditTeamModal from "../components/modals/EditTeamModal";
 import TeamStrategy from "../components/TeamStrategy";
 import TeamLinks from "../components/TeamLinks";
 import ShareTeamModal from "../components/modals/ShareTeamModal";
+import TeamTimeline from "../components/TeamTimeline";
+import TeamDocuments from "../components/TeamDocuments";
 import { useTeamDetails, useJoinTeam, useLeaveTeam, useDeleteTeam } from "../hooks/useTeams";
 import { EXECUTIVE_LEVELS } from "../../../utils/roles";
 import { Trash2 } from "lucide-react";
@@ -70,6 +72,7 @@ export default function TeamDetailsPage() {
     const [isEditTeamOpen, setIsEditTeamOpen] = useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [taskRefreshTrigger, setTaskRefreshTrigger] = useState(0);
+    const [activeTab, setActiveTab] = useState<'board' | 'timeline' | 'documents' | 'meetings' | 'strategy'>('board');
 
 
     // Helpers
@@ -211,95 +214,134 @@ export default function TeamDetailsPage() {
                 {/* Content */}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-                    {/* Full Width Section: Tasks */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-black flex items-center gap-2">
-                                {t('profile.teamTasks')}
-
-                            </h2>
-                            {canManageTeam && (
-                                <button
-                                    onClick={() => setIsCreateTaskOpen(true)}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-(--color-mySecondary) text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-gray-800 transition-colors"
-                                >
-                                    <Plus className="w-4 h-4" /> {t('profile.newTask')}
-                                </button>
-                            )}
-                        </div>
-
-                        <TeamTasksList
-                            teamId={team.id}
-                            refreshTrigger={taskRefreshTrigger}
-                            isAdmin={canManageTeam}
-                            teamMembers={team.members?.map((m: any) => ({
-                                id: m.member_id,
-                                fullname: m.member?.fullname || 'Unknown',
-                                avatar_url: m.member?.avatar_url
-                            })) || []}
-                        />
+                    {/* Tab Navigation */}
+                    <div className="flex overflow-x-auto hide-scrollbar gap-2 pb-4 mb-2 border-b border-gray-100">
+                        {[
+                            { id: 'board', label: 'Tasks & Board' },
+                            { id: 'timeline', label: 'Timeline' },
+                            { id: 'documents', label: 'Documents' },
+                            { id: 'meetings', label: 'Meetings' },
+                            { id: 'strategy', label: 'Strategy & Links' },
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={`px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab.id
+                                    ? 'bg-gray-900 text-white shadow-sm'
+                                    : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 border border-gray-100'
+                                    }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
 
-                    {/* Full Width Section: Meetings */}
-                    <TeamMeetings teamId={team.id} canManage={canManageTeam} />
+                    {/* Tab Content Areas */}
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Main Content: Strategy & Links (2/3) */}
-                        <div className="lg:col-span-2 space-y-6">
-                            {(team.strategy || canManageTeam) && (
-                                <TeamStrategy
-                                    team={team}
-                                    canManage={canManageTeam}
-                                    onUpdated={refetch}
-                                />
-                            )}
-                            {((team.resources?.length ?? 0) > 0 || canManageTeam) && (
-                                <TeamLinks
-
-                                    team={team}
-                                    canManage={canManageTeam}
-                                    onUpdated={refetch}
-                                />
-                            )}
-                        </div>
-
-                        {/* Sidebar: Members */}
-                        <div className="space-y-6">
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-gray-500" />
-                                    Members
-                                    <span className="text-gray-400 font-normal text-sm">({(team.members?.length ?? 0)})</span>
-                                </h3>
-                                <div className="space-y-3">
-                                    {team.members?.map((tm: any) => (
-                                        <div key={tm.id} className="flex items-center justify-between group">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                                                    {tm.member?.avatar_url ? (
-                                                        <img src={tm.member.avatar_url} alt="" className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <span className="text-xs font-bold text-gray-500">
-                                                            {tm.member?.fullname?.substring(0, 2).toUpperCase() || "??"}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-900">{tm.member?.fullname}</p>
-                                                    <p className="text-xs text-gray-500 capitalize">
-                                                        {(tm as any).custom_title || tm.role}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            {tm.role === 'admin' && <Shield className="w-3 h-3 text-blue-500" />}
-                                        </div>
-                                    ))}
-                                </div>
+                    {activeTab === 'board' && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-black flex items-center gap-2">
+                                    {t('profile.teamTasks')}
+                                </h2>
+                                {canManageTeam && (
+                                    <button
+                                        onClick={() => setIsCreateTaskOpen(true)}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-(--color-mySecondary) text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-gray-800 transition-colors"
+                                    >
+                                        <Plus className="w-4 h-4" /> {t('profile.newTask')}
+                                    </button>
+                                )}
                             </div>
 
+                            <TeamTasksList
+                                teamId={team.id}
+                                refreshTrigger={taskRefreshTrigger}
+                                isAdmin={canManageTeam}
+                                teamMembers={team.members?.map((m: any) => ({
+                                    id: m.member_id,
+                                    fullname: m.member?.fullname || 'Unknown',
+                                    avatar_url: m.member?.avatar_url
+                                })) || []}
+                            />
                         </div>
+                    )}
 
-                    </div>
+                    {activeTab === 'timeline' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <TeamTimeline teamId={team.id} canManage={canManageTeam} />
+                        </div>
+                    )}
+
+                    {activeTab === 'documents' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <TeamDocuments teamId={team.id} canManage={canManageTeam} currentUserId={user?.id} />
+                        </div>
+                    )}
+
+                    {activeTab === 'meetings' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <TeamMeetings teamId={team.id} canManage={canManageTeam} />
+                        </div>
+                    )}
+
+                    {activeTab === 'strategy' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            {/* Main Content: Strategy & Links (2/3) */}
+                            <div className="lg:col-span-2 space-y-6">
+                                {(team.strategy || canManageTeam) && (
+                                    <TeamStrategy
+                                        team={team}
+                                        canManage={canManageTeam}
+                                        onUpdated={refetch}
+                                    />
+                                )}
+                                {((team.resources?.length ?? 0) > 0 || canManageTeam) && (
+                                    <TeamLinks
+                                        team={team}
+                                        canManage={canManageTeam}
+                                        onUpdated={refetch}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Sidebar: Members */}
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                                    <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                        <Users className="w-5 h-5 text-gray-500" />
+                                        Members
+                                        <span className="text-gray-400 font-normal text-sm">({(team.members?.length ?? 0)})</span>
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {team.members?.map((tm: any) => (
+                                            <div key={tm.id} className="flex items-center justify-between group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                                                        {tm.member?.avatar_url ? (
+                                                            <img src={tm.member.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-xs font-bold text-gray-500">
+                                                                {tm.member?.fullname?.substring(0, 2).toUpperCase() || "??"}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-900">{tm.member?.fullname}</p>
+                                                        <p className="text-xs text-gray-500 capitalize">
+                                                            {(tm as any).custom_title || tm.role}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {tm.role === 'admin' && <Shield className="w-3 h-3 text-blue-500" />}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Modals */}
@@ -344,4 +386,3 @@ export default function TeamDetailsPage() {
         </div>
     );
 }
-

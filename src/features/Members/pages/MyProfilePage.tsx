@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Camera,
   Save,
@@ -25,6 +24,14 @@ import {
 import Navbar from "../../../Global_Components/navBar";
 import { useMyProfile } from "../hooks/useMyProfile";
 import type { Member } from "../types";
+import { useQuery } from '@tanstack/react-query';
+import { getMemberChallenges, getMemberRewards } from '../../Gamification/services/gamification.service';
+
+// Smart Profile Sub-Components
+import ImpactIndicator from '../components/smart_profile/ImpactIndicator';
+import CVAssociatif from '../components/smart_profile/CVAssociatif';
+import ProjectPortfolio from '../components/smart_profile/ProjectPortfolio';
+import GamificationBadges from '../components/smart_profile/GamificationBadges';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -460,7 +467,6 @@ function Empty({ text }: { text: string }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function MyProfilePage() {
-  const navigate = useNavigate();
   const {
     profile,
     isLoading,
@@ -468,10 +474,25 @@ export default function MyProfilePage() {
     avatarUploading,
     updateProfile,
     uploadAvatar,
-    error,
   } = useMyProfile();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
+  // Gamification Data Fetching
+  const { data: challenges = [] } = useQuery({
+    queryKey: ['member-challenges', profile?.id],
+    queryFn: () => getMemberChallenges(profile!.id),
+    enabled: !!profile?.id,
+  });
+
+  const { data: rewards = [] } = useQuery({
+    queryKey: ['member-rewards', profile?.id],
+    queryFn: () => getMemberRewards(profile!.id),
+    enabled: !!profile?.id,
+  });
+
+  // Calculate challenges completed
+  const completedChallenges = challenges.filter(c => c.status === 'completed').length;
 
   // ── 1. Personal ─────────────────────────────────────────────────────────────
   const [pFullname, setPFullname] = useState("");
@@ -483,8 +504,9 @@ export default function MyProfilePage() {
   const [prJob, setPrJob] = useState("");
   const [prSpecialties, setPrSpecialties] = useState<string[]>([]);
 
-  // ── 3. Availability ─────────────────────────────────────────────────────────
+  // ── 3. Availability & Impact ────────────────────────────────────────────────
   const [avDays, setAvDays] = useState<string[]>([]);
+  const [supCauses, setSupCauses] = useState<string[]>([]);
   const [avTime, setAvTime] = useState<"matinal" | "afternoon" | "full_day">(
     "matinal",
   );
@@ -518,6 +540,7 @@ export default function MyProfilePage() {
     setPBio(profile.description ?? "");
     setPrJob(profile.job_title ?? "");
     setPrSpecialties(profile.specialties ?? []);
+    setSupCauses(profile.supported_causes ?? []);
     setAvDays(profile.availability_days ?? []);
     setAvTime((profile.availability_time as any) ?? "matinal");
     setAvHours(profile.estimated_volunteering_hours ?? 0);
@@ -594,39 +617,18 @@ export default function MyProfilePage() {
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">
-              Profile could not be loaded
+              Generating your profile...
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              {error
-                ? `Error: ${(error as Error).message}`
-                : "Your profile row was not found in the database. This usually means the profiles table trigger did not run when your account was created."}
+              Your profile wasn't ready yet. We are attempting to automatically create it for you now.
             </p>
           </div>
-          <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-left">
-            <p className="text-xs font-bold text-amber-700 uppercase tracking-widest mb-1">
-              How to fix
-            </p>
-            <p className="text-xs text-amber-600">
-              Go to your Supabase dashboard → SQL Editor and run:
-            </p>
-            <pre className="mt-2 text-[11px] bg-white border border-amber-100 rounded-lg p-2 text-gray-700 whitespace-pre-wrap break-all select-all">
-              {`INSERT INTO public.profiles (id, email, fullname)
-VALUES (auth.uid(), auth.email(), '')
-ON CONFLICT (id) DO NOTHING;`}
-            </pre>
-          </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 mt-4">
             <button
               onClick={() => window.location.reload()}
               className="flex-1 py-2.5 rounded-xl bg-[var(--color-myPrimary)] text-white text-sm font-semibold hover:opacity-90 transition"
             >
-              Retry
-            </button>
-            <button
-              onClick={() => navigate("/")}
-              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition"
-            >
-              Go Home
+              Refresh Page
             </button>
           </div>
         </div>
@@ -756,21 +758,13 @@ ON CONFLICT (id) DO NOTHING;`}
                 </div>
 
                 {/* Stats */}
-                <div className="flex gap-6 shrink-0">
+                <div className="flex gap-6 shrink-0 hidden md:flex">
                   <div className="text-center">
                     <p className="text-xl font-black text-[var(--color-myPrimary)]">
                       {profile.points ?? 0}
                     </p>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                       Points
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xl font-black text-amber-500">
-                      {Number((profile as any).jps_score ?? 0).toFixed(0)}
-                    </p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                      JPS
                     </p>
                   </div>
                 </div>
@@ -781,6 +775,16 @@ ON CONFLICT (id) DO NOTHING;`}
               </p>
             </div>
           </div>
+
+          {/* INDICATION DE L'IMPACT & BADGES GAMIFICATION */}
+          <ImpactIndicator
+            points={profile.points ?? 0}
+            jps={profile.jps_score ?? 0}
+            hours={profile.total_volunteering_hours ?? 0}
+            challenges={completedChallenges}
+          />
+
+          <GamificationBadges rewards={rewards} />
 
           {/* ════════════════════════════════════════════════════════════
               1. PERSONAL INFORMATION
@@ -988,6 +992,7 @@ ON CONFLICT (id) DO NOTHING;`}
             onCancel={() =>
               cancelEdit(() => {
                 setAvDays(profile.availability_days ?? []);
+                setSupCauses(profile.supported_causes ?? []);
                 setAvTime((profile.availability_time as any) ?? "matinal");
                 setAvHours(profile.estimated_volunteering_hours ?? 0);
               })
@@ -995,6 +1000,7 @@ ON CONFLICT (id) DO NOTHING;`}
             onSave={() =>
               saveSection({
                 availability_days: avDays,
+                supported_causes: supCauses,
                 availability_time: avTime,
                 estimated_volunteering_hours: avHours,
               })
@@ -1020,8 +1026,8 @@ ON CONFLICT (id) DO NOTHING;`}
                             )
                           }
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${active
-                              ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-100"
-                              : "bg-gray-50 border-gray-200 text-gray-500 hover:border-emerald-300"
+                            ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-100"
+                            : "bg-gray-50 border-gray-200 text-gray-500 hover:border-emerald-300"
                             }`}
                         >
                           {DAY_SHORT[day]}
@@ -1041,8 +1047,8 @@ ON CONFLICT (id) DO NOTHING;`}
                           type="button"
                           onClick={() => setAvTime(slot)}
                           className={`flex-1 py-2 rounded-xl text-xs font-bold border transition capitalize ${avTime === slot
-                              ? "bg-emerald-500 border-emerald-500 text-white"
-                              : "bg-gray-50 border-gray-200 text-gray-500 hover:border-emerald-300"
+                            ? "bg-emerald-500 border-emerald-500 text-white"
+                            : "bg-gray-50 border-gray-200 text-gray-500 hover:border-emerald-300"
                             }`}
                         >
                           {slot === "full_day"
@@ -1269,10 +1275,26 @@ ON CONFLICT (id) DO NOTHING;`}
                   value={profile.preferred_meal}
                 />
                 <InfoRow
-                  icon={Star}
-                  label="Astrological Sign"
-                  value={profile.astrological_sign}
+                  icon={Calendar}
+                  label="Estimated Weekly Hours"
+                  value={profile.estimated_volunteering_hours?.toString() + " hours"}
                 />
+                <div>
+                  <p className={labelCls}>Causes Soutenues</p>
+                  {(profile.supported_causes ?? []).length > 0 ? (
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {profile.supported_causes!.map((c) => (
+                        <Tag
+                          key={c}
+                          label={c}
+                          color="bg-emerald-50 text-emerald-700 border-emerald-100"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <Empty text="No causes added yet." />
+                  )}
+                </div>
               </div>
             )}
           </Section>
@@ -1409,6 +1431,13 @@ ON CONFLICT (id) DO NOTHING;`}
               )}
             </Section>
           </div>
+
+          {/* ════════════════════════════════════════════════════════════
+              SMART PROFILES: CV & PORTFOLIO
+          ════════════════════════════════════════════════════════════ */}
+          <CVAssociatif memberId={profile.id} isOwner={true} />
+
+          <ProjectPortfolio memberId={profile.id} isOwner={true} />
 
           {/* ════════════════════════════════════════════════════════════
               7. SETTINGS

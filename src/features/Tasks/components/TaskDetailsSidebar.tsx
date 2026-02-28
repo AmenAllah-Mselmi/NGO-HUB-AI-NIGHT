@@ -1,4 +1,4 @@
-import { X, Calendar, Clock, Trophy, CheckCircle2, Circle, Star, Paperclip, Download, Eye, FileText, ImageIcon, Pencil } from 'lucide-react';
+import { X, Calendar, Clock, Trophy, CheckCircle2, Circle, Star, Paperclip, Download, Eye, FileText, ImageIcon, Pencil, History, Milestone } from 'lucide-react';
 import { useState } from 'react';
 import type { Task } from '../types';
 
@@ -12,35 +12,34 @@ interface TaskDetailsSidebarProps {
 }
 
 export const TaskDetailsSidebar = ({ task, isOpen, onClose, onEdit, isAdmin, currentUserId }: TaskDetailsSidebarProps) => {
-    const [previewItem, setPreviewItem] = useState<{name: string, url: string} | null>(null);
+    const [previewItem, setPreviewItem] = useState<{ name: string, url: string } | null>(null);
 
     if (!task) return null;
 
-    const isExpired = task.deadline && task.status !== 'completed' && new Date(task.deadline) < new Date(new Date().setHours(0,0,0,0));
+    const isExpired = task.deadline && task.status !== 'completed' && new Date(task.deadline) < new Date(new Date().setHours(0, 0, 0, 0));
 
     return (
         <>
             {/* Backdrop */}
-            <div 
+            <div
                 className={`fixed inset-0 bg-black/20 backdrop-blur-sm z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 onClick={onClose}
             />
 
             {/* Sidebar */}
-            <div 
+            <div
                 className={`fixed top-0 right-0 h-full w-full max-w-lg bg-white shadow-2xl z-60 transform transition-transform duration-500 ease-out border-l border-gray-100 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
             >
                 {/* Header */}
-                <div 
+                <div
                     className="p-6 border-b flex items-center justify-between sticky top-0 z-10"
                     style={{ backgroundColor: task.header_color || '#ffffff' }}
                 >
                     <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-xl bg-white/90 shadow-sm ${
-                            task.status === 'completed' ? 'text-emerald-600' :
-                            task.status === 'in_progress' ? 'text-blue-600' :
-                            'text-slate-500'
-                        }`}>
+                        <div className={`p-2 rounded-xl bg-white/90 shadow-sm ${task.status === 'completed' ? 'text-emerald-600' :
+                                task.status === 'in_progress' ? 'text-blue-600' :
+                                    'text-slate-500'
+                            }`}>
                             {task.status === 'completed' ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
                         </div>
                         <div>
@@ -50,21 +49,20 @@ export const TaskDetailsSidebar = ({ task, isOpen, onClose, onEdit, isAdmin, cur
                     </div>
                     <div className="flex items-center gap-2">
                         {(isAdmin || task.assignments?.some(a => a.member_id === currentUserId)) && onEdit && (
-                            <button 
+                            <button
                                 onClick={() => {
                                     onEdit(task);
                                     onClose();
                                 }}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${
-                                    task.header_color 
-                                        ? 'bg-white/20 text-white hover:bg-white/30 border border-white/20' 
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${task.header_color
+                                        ? 'bg-white/20 text-white hover:bg-white/30 border border-white/20'
                                         : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100'
-                                }`}
+                                    }`}
                             >
                                 <Pencil className="w-3.5 h-3.5" /> Modify
                             </button>
                         )}
-                        <button 
+                        <button
                             onClick={onClose}
                             className={`p-2 rounded-xl transition-colors ${task.header_color ? 'text-white/80 hover:bg-white/10' : 'text-gray-400 hover:bg-gray-50'}`}
                         >
@@ -77,11 +75,10 @@ export const TaskDetailsSidebar = ({ task, isOpen, onClose, onEdit, isAdmin, cur
                 <div className="flex-1 overflow-y-auto px-6 py-8 space-y-8 scrollbar-thin scrollbar-thumb-gray-200">
                     {/* Status & Priority Ribbon */}
                     <div className="flex flex-wrap gap-2">
-                         <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            task.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                            task.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
-                            'bg-slate-50 text-slate-600 border border-slate-100'
-                        }`}>
+                        <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${task.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                                task.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                                    'bg-slate-50 text-slate-600 border border-slate-100'
+                            }`}>
                             {task.status?.replace('_', ' ')}
                         </span>
                         {task.star_rating && (
@@ -97,11 +94,10 @@ export const TaskDetailsSidebar = ({ task, isOpen, onClose, onEdit, isAdmin, cur
                             </span>
                         )}
                         {task.complexity && (
-                            <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                                task.complexity === 'lead' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
-                                task.complexity === 'major' ? 'bg-orange-50 text-orange-700 border-orange-100' :
-                                'bg-slate-50 text-slate-600 border-slate-100'
-                            }`}>
+                            <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${task.complexity === 'lead' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                                    task.complexity === 'major' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                                        'bg-slate-50 text-slate-600 border-slate-100'
+                                }`}>
                                 {task.complexity}
                             </span>
                         )}
@@ -112,10 +108,36 @@ export const TaskDetailsSidebar = ({ task, isOpen, onClose, onEdit, isAdmin, cur
                         )}
                     </div>
 
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-4">
+                        {task.logged_hours !== undefined && (
+                            <div className="p-4 rounded-2xl border border-blue-100 bg-blue-50/30">
+                                <div className="flex items-center gap-2 text-blue-400 mb-1">
+                                    <History className="w-3.5 h-3.5" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Logged Time</span>
+                                </div>
+                                <span className="text-sm font-bold text-blue-900">
+                                    {task.logged_hours} Hours
+                                </span>
+                            </div>
+                        )}
+                        {task.milestone_id && (
+                            <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50/30">
+                                <div className="flex items-center gap-2 text-emerald-400 mb-1">
+                                    <Milestone className="w-3.5 h-3.5" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Linked Milestone</span>
+                                </div>
+                                <span className="text-sm font-bold text-emerald-900 line-clamp-1">
+                                    Target Timeline Entry
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Description */}
                     <section>
                         <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
-                             Description
+                            Description
                         </h3>
                         <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
                             <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
@@ -176,8 +198,8 @@ export const TaskDetailsSidebar = ({ task, isOpen, onClose, onEdit, isAdmin, cur
                                 {task.attachments.map((att, idx) => {
                                     const isImage = att.url.match(/\.(jpeg|jpg|gif|png|webp|avif)$/i) || att.url.includes('image');
                                     return (
-                                        <div 
-                                            key={idx} 
+                                        <div
+                                            key={idx}
                                             className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all group"
                                         >
                                             <div className="flex items-center gap-3 min-w-0">
@@ -190,15 +212,15 @@ export const TaskDetailsSidebar = ({ task, isOpen, onClose, onEdit, isAdmin, cur
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button 
+                                                <button
                                                     onClick={() => setPreviewItem(att)}
                                                     className="p-2 bg-white text-gray-600 rounded-lg shadow-sm border border-gray-100 hover:text-blue-600 hover:border-blue-200 transition-all"
                                                     title="Preview"
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                 </button>
-                                                <a 
-                                                    href={att.url} 
+                                                <a
+                                                    href={att.url}
                                                     download={att.name}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
@@ -235,7 +257,7 @@ export const TaskDetailsSidebar = ({ task, isOpen, onClose, onEdit, isAdmin, cur
                 {/* Footer Actions */}
                 <div className="p-6 border-t border-gray-50 bg-gray-50/30">
                     <div className="flex gap-3">
-                        <button 
+                        <button
                             className="flex-1 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
                             onClick={onClose}
                         >
@@ -260,8 +282,8 @@ export const TaskDetailsSidebar = ({ task, isOpen, onClose, onEdit, isAdmin, cur
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Resource Preview</p>
                                 </div>
                             </div>
-                            <button 
-                                onClick={() => setPreviewItem(null)} 
+                            <button
+                                onClick={() => setPreviewItem(null)}
                                 className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 text-gray-400 hover:text-gray-600 hover:rotate-90 transition-all"
                             >
                                 <X className="w-5 h-5" />
@@ -271,9 +293,9 @@ export const TaskDetailsSidebar = ({ task, isOpen, onClose, onEdit, isAdmin, cur
                         {/* Content */}
                         <div className="p-0 bg-gray-100 flex items-center justify-center min-h-[300px] max-h-[70vh] overflow-auto">
                             {previewItem.url.match(/\.(jpeg|jpg|gif|png|webp|avif)$/i) || previewItem.url.includes('image') ? (
-                                <img 
-                                    src={previewItem.url} 
-                                    alt={previewItem.name} 
+                                <img
+                                    src={previewItem.url}
+                                    alt={previewItem.name}
                                     className="max-w-full max-h-full object-contain shadow-2xl"
                                 />
                             ) : (
@@ -293,13 +315,13 @@ export const TaskDetailsSidebar = ({ task, isOpen, onClose, onEdit, isAdmin, cur
 
                         {/* Footer */}
                         <div className="p-6 bg-white border-t flex justify-end gap-3">
-                            <button 
+                            <button
                                 onClick={() => setPreviewItem(null)}
                                 className="px-6 py-2.5 text-xs font-black text-gray-500 uppercase tracking-widest hover:bg-gray-50 rounded-xl transition-all"
                             >
                                 Close
                             </button>
-                            <a 
+                            <a
                                 href={previewItem.url}
                                 download={previewItem.name}
                                 target="_blank"

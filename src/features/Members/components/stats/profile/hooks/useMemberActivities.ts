@@ -32,13 +32,35 @@ export const useMemberActivities = (memberId: string) => {
       );
       const preferredCategoryIds = memberCategoriesData?.map(c => c.category_id) || [];
 
-      const { data: allActivities, error: actError } = await supabase
-          .from('activities')
-          .select('*, activity_participants(count)')
-          .gte('activity_begin_date', joinDate)
-          .order('activity_begin_date', { ascending: false });
+      // Fetch activities from club_events and map to Activity shape
+      const { data: clubEvents, error: ceErr } = await supabase
+          .from('club_events')
+          .select('*')
+          .gte('start_at', joinDate)
+          .order('start_at', { ascending: false });
 
-      if (actError) throw actError;
+      if (ceErr) throw ceErr;
+
+      const allActivities = (clubEvents || []).map((ce: any) => ({
+        id: ce.id,
+        name: ce.title,
+        description: ce.description,
+        activity_address: ce.location,
+        is_online: false,
+        online_link: null,
+        activity_begin_date: ce.start_at,
+        activity_end_date: ce.end_at,
+        leader_id: ce.created_by,
+        activity_points: 0,
+        is_paid: false,
+        price: null,
+        is_public: true,
+        image_url: ce.image_url,
+        video_url: null,
+        recap_images: null,
+        recap_videos: null,
+        created_at: ce.created_at,
+      }))
 
       const { data: allCategoryLinks } = await supabase
           .from('activity_categories')

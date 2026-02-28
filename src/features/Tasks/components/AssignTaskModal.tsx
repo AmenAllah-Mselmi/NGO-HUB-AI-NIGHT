@@ -16,7 +16,7 @@ interface AssignTaskModalProps {
 export default function AssignTaskModal({ open, onClose, onAssigned, memberId }: AssignTaskModalProps) {
     const [activeTab, setActiveTab] = useState<'new' | 'existing'>('existing');
     const [loading, setLoading] = useState(false);
-    
+
     // -- Create New State --
     const [title, setTitle] = useState("");
     const [points, setPoints] = useState<number>(0);
@@ -25,7 +25,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
     const [startDate, setStartDate] = useState<string>("");
     const [deadline, setDeadline] = useState<string>("");
     const [complexity, setComplexity] = useState<'lead' | 'major' | 'minor'>('minor');
-    
+
     const handleTrackingTypeChange = (type: 'manual' | 'subtasks') => {
         setTrackingType(type);
         if (type === 'manual') setSubtasks([]);
@@ -76,8 +76,8 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
         }
 
         if (trackingType === 'subtasks' && subtasks.length === 0) {
-           toast.error("Please add at least one subtask or switch to Manual tracking");
-           return;
+            toast.error("Please add at least one subtask or switch to Manual tracking");
+            return;
         }
 
         try {
@@ -92,11 +92,12 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                 complexity,
                 subtasks: trackingType === 'subtasks' ? subtasks : []
             }, trackingType);
-            
+
             toast.success("Task created and assigned");
             successClose();
-        } catch (error) {
-            toast.error("Failed to create task");
+        } catch (error: any) {
+            console.error("Assign task error:", error);
+            toast.error(error?.message || "Failed to create task");
         } finally {
             setLoading(false);
         }
@@ -114,7 +115,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
             const type = (task?.subtasks && task.subtasks.length > 0) ? 'subtasks' : 'manual';
 
             await assignTaskToMember(memberId, selectedTaskId, type);
-            
+
             toast.success("Task assigned successfully");
             successClose();
         } catch (error) {
@@ -139,8 +140,8 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
         setComplexity('minor');
     };
 
-    const filteredTasks = availableTasks.filter(t => 
-        t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const filteredTasks = availableTasks.filter(t =>
+        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (t.team?.name && t.team.name.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
@@ -157,13 +158,13 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                 </div>
 
                 <div className="flex bg-gray-50 border-b p-1">
-                    <button 
+                    <button
                         onClick={() => setActiveTab('existing')}
                         className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'existing' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         Existing Tasks
                     </button>
-                    <button 
+                    <button
                         onClick={() => setActiveTab('new')}
                         className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'new' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                     >
@@ -174,11 +175,11 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                 <div className="flex-1 overflow-y-auto">
                     {activeTab === 'existing' ? (
                         <div className="p-4 space-y-4">
-                             <div className="relative">
+                            <div className="relative">
                                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                                <input 
-                                    type="text" 
-                                    placeholder="Search tasks..." 
+                                <input
+                                    type="text"
+                                    placeholder="Search tasks..."
                                     className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -195,7 +196,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                                     {filteredTasks.map(task => {
                                         const isSelected = selectedTaskId === task.id;
                                         return (
-                                            <div 
+                                            <div
                                                 key={task.id}
                                                 onClick={() => setSelectedTaskId(task.id)}
                                                 className={cn(
@@ -213,11 +214,10 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                                                                 </span>
                                                             )}
                                                             {task.complexity && (
-                                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest whitespace-nowrap ${
-                                                                    task.complexity === 'lead' ? 'bg-indigo-100 text-indigo-700' :
-                                                                    task.complexity === 'major' ? 'bg-orange-100 text-orange-700' :
-                                                                    'bg-slate-100 text-slate-600'
-                                                                }`}>
+                                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest whitespace-nowrap ${task.complexity === 'lead' ? 'bg-indigo-100 text-indigo-700' :
+                                                                        task.complexity === 'major' ? 'bg-orange-100 text-orange-700' :
+                                                                            'bg-slate-100 text-slate-600'
+                                                                    }`}>
                                                                     {task.complexity}
                                                                 </span>
                                                             )}
@@ -234,10 +234,10 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                     ) : (
                         // Create New Form
                         <form id="create-task-form" onSubmit={handleCreateSubmit} className="p-6 space-y-4">
-                             <div>
+                            <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Task Title <span className="text-red-500">*</span></label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                     placeholder="e.g., Organize Charity Event"
                                     value={title}
@@ -247,8 +247,8 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Points Value</label>
-                                <input 
-                                    type="number" 
+                                <input
+                                    type="number"
                                     min="0"
                                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                     placeholder="e.g., 50"
@@ -259,7 +259,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Complexity (JPS Multiplier)</label>
-                                <select 
+                                <select
                                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                     value={complexity}
                                     onChange={(e) => setComplexity(e.target.value as any)}
@@ -272,7 +272,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                <textarea 
+                                <textarea
                                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none h-24"
                                     placeholder="Add details about this task..."
                                     value={description}
@@ -283,7 +283,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-gray-700 mb-1 font-bold text-xs uppercase tracking-wider">Start Date</label>
-                                    <input 
+                                    <input
                                         type="date"
                                         className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                                         value={startDate}
@@ -292,7 +292,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                                 </div>
                                 <div>
                                     <label className="block text-gray-700 mb-1 font-bold text-xs uppercase tracking-wider">Deadline</label>
-                                    <input 
+                                    <input
                                         type="date"
                                         className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-red-600 font-bold"
                                         value={deadline}
@@ -336,7 +336,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                                             onChange={(e) => setNewSubtaskText(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSubtask())}
                                         />
-                                        <button 
+                                        <button
                                             type="button"
                                             onClick={handleAddSubtask}
                                             className="px-3 py-2 bg-(--color-myAccent) text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -349,7 +349,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                                         {subtasks.map((st) => (
                                             <li key={st.id} className="flex items-center justify-between bg-white p-2 rounded border border-gray-200 text-sm group">
                                                 <span className="text-gray-700">{st.text}</span>
-                                                <button 
+                                                <button
                                                     type="button"
                                                     onClick={() => removeSubtask(st.id)}
                                                     className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
@@ -369,7 +369,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                 </div>
 
                 <div className="flex justify-end gap-3 p-4 border-t">
-                     <button 
+                    <button
                         type="button"
                         onClick={onClose}
                         className="px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors"
@@ -377,7 +377,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                         Cancel
                     </button>
                     {activeTab === 'existing' ? (
-                        <button 
+                        <button
                             onClick={handleExistingSubmit}
                             disabled={loading || !selectedTaskId}
                             className="flex items-center gap-2 px-6 py-2 bg-(--color-myPrimary) text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -385,7 +385,7 @@ export default function AssignTaskModal({ open, onClose, onAssigned, memberId }:
                             {loading ? 'Assigning...' : 'Assign Selected'}
                         </button>
                     ) : (
-                        <button 
+                        <button
                             type="submit"
                             form="create-task-form"
                             disabled={loading}

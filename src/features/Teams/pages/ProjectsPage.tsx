@@ -34,9 +34,9 @@ const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
 };
 
 const projectSchema = z.object({
-  name: z.string().min(3, "Name is required"),
-  description: z.string().optional(),
-  teamsInput: z.string().optional(), // For comma separated teams
+    name: z.string().min(3, "Name is required"),
+    description: z.string().optional(),
+    teamsInput: z.string().optional(), // For comma separated teams
 });
 
 type ProjectFormValues = z.infer<typeof projectSchema>;
@@ -46,11 +46,11 @@ export default function ProjectsPage() {
     const { role, user } = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
-    
+
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
-    
+
     const canManage = EXECUTIVE_LEVELS.includes(role?.toLowerCase() || '');
 
     const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<ProjectFormValues>({
@@ -95,7 +95,7 @@ export default function ProjectsPage() {
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         if (!window.confirm(t('teams.confirmDeleteProject', 'Are you sure you want to delete this project? This will delete all associated teams and tasks.'))) {
             return;
         }
@@ -123,13 +123,13 @@ export default function ProjectsPage() {
                 });
                 toast.success("Project updated successfully");
             } else {
-                const teamNames = data.teamsInput 
+                const teamNames = data.teamsInput
                     ? data.teamsInput.split(',').map(s => s.trim()).filter(s => s.length > 0)
                     : [];
-                
-                await createProject({ 
-                    name: data.name, 
-                    description: data.description, 
+
+                await createProject({
+                    name: data.name,
+                    description: data.description,
                     leader_id: user.id,
                     teams: teamNames
                 });
@@ -155,8 +155,8 @@ export default function ProjectsPage() {
                             <h1 className="text-3xl font-bold text-gray-900">{t('teams.projects', 'Projects')}</h1>
                             <p className="text-gray-500 mt-1">{t('teams.projectsSubtitle', 'Manage strategic initiatives and their teams')}</p>
                         </div>
-                        {canManage && (
-                            <button 
+                        {user && (
+                            <button
                                 onClick={handleOpenCreate}
                                 className="inline-flex items-center gap-2 bg-(--color-myPrimary) text-white px-5 py-2.5 rounded-lg hover:opacity-90 transition-colors font-medium shadow-sm"
                             >
@@ -182,7 +182,7 @@ export default function ProjectsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {projects.map((project) => (
                                 <div key={project.id} className="relative group">
-                                    <Link 
+                                    <Link
                                         to={`/projects/${project.id}`}
                                         className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col h-full"
                                     >
@@ -193,14 +193,14 @@ export default function ProjectsPage() {
                                             <div className="flex items-center gap-2">
                                                 {canManage && (
                                                     <div className="flex items-center gap-1">
-                                                        <button 
+                                                        <button
                                                             onClick={(e) => handleOpenEdit(e, project)}
                                                             className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                                                             title={t('common.edit', 'Edit')}
                                                         >
                                                             <Pencil className="w-4 h-4" />
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             onClick={(e) => handleDelete(e, project.id)}
                                                             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                                             title={t('common.delete', 'Delete')}
@@ -212,7 +212,7 @@ export default function ProjectsPage() {
                                                 <ChevronRight className={`w-5 h-5 text-gray-300 group-hover:text-gray-500 transition-colors ${i18n.dir() === 'rtl' ? 'rotate-180' : ''}`} />
                                             </div>
                                         </div>
-                                        
+
                                         <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
                                             {project.name}
                                         </h3>
@@ -273,7 +273,7 @@ export default function ProjectsPage() {
                             </div>
                         )}
                     </FormSection>
-                    
+
                     <div className="flex justify-end gap-3 pt-4 border-t">
                         <button
                             type="button"
@@ -287,8 +287,8 @@ export default function ProjectsPage() {
                             disabled={isSubmitting}
                             className="px-6 py-2 bg-(--color-myPrimary) text-white rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 font-bold shadow-md shadow-blue-200"
                         >
-                            {isSubmitting 
-                                ? (editingProject ? t('common.updating', 'Updating...') : t('common.creating', 'Creating...')) 
+                            {isSubmitting
+                                ? (editingProject ? t('common.updating', 'Updating...') : t('common.creating', 'Creating...'))
                                 : (editingProject ? t('common.update', 'Update Project') : t('common.create', 'Create Project'))}
                         </button>
                     </div>

@@ -9,7 +9,7 @@ import { useAuth } from "../../Authentication/auth.context";
 export const MY_PROFILE_KEY = ["my-profile"] as const;
 
 async function fetchMyProfile(userId: string): Promise<Member | null> {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("profiles")
     .select(
       `
@@ -45,37 +45,34 @@ async function fetchMyProfile(userId: string): Promise<Member | null> {
 
   let profileData = data;
 
-  if (error) {
-    if (error.code === 'PGRST116') {
-      // Profile not found, this happens if the auth trigger didn't run.
-      // Attempt to self-heal by inserting a blank profile
-      const userRes = await supabase.auth.getUser();
-      if (userRes.data.user) {
-        const u = userRes.data.user;
-        const { error: insertErr } = await supabase.from('profiles').insert({
-          id: userId,
-          email: u.email,
-          fullname: u.user_metadata?.fullname || '',
-          phone: u.user_metadata?.phone || '',
-          birth_date: u.user_metadata?.birth_date || null
-        });
-        if (!insertErr) {
-          // Re-fetch after successful insert
-          const { data: newData, error: newError } = await supabase.from('profiles').select('*').eq('id', userId).single();
-          if (!newError && newData) {
-            profileData = newData;
-          }
-        } else {
-          console.error("[useMyProfile] Self-healing insert error:", insertErr.message);
+  // Self-heal: If no profile data was found, attempt to insert one immediately
+  if (!profileData) {
+    console.log("[useMyProfile] Profile not found. Attempting self-healing upsert...");
+    const userRes = await supabase.auth.getUser();
+
+    if (userRes.data?.user) {
+      const u = userRes.data.user;
+      const { error: upsertErr } = await supabase.from('profiles').upsert({
+        id: userId,
+        email: u.email,
+        fullname: u.user_metadata?.fullname || u.email?.split('@')[0] || 'Unknown User',
+        phone: u.user_metadata?.phone || null,
+        birth_date: u.user_metadata?.birth_date || null
+      });
+
+      if (!upsertErr) {
+        // Re-fetch after successful upsert
+        const { data: newData, error: newError } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+        if (!newError && newData) {
+          profileData = newData;
         }
+      } else {
+        console.error("[useMyProfile] Self-healing upsert error:", upsertErr.message);
       }
-    } else {
-      console.error("[useMyProfile] fetchMyProfile error:", error.message);
-      return null;
     }
   }
 
-  // If still no profile data after self-healing attempts
+  // If still no profile data after self-healing attempts, throw an error so the UI can handle it gracefully if needed, or return null
   if (!profileData) return null;
 
   // Fetch role name via roles table (roles.member_id → profiles.id)

@@ -1,6 +1,5 @@
-
 import supabase from "../../../utils/supabase";
-import type { Team } from "../types";
+import type { Team, TeamMilestone, TeamDocument } from "../types";
 
 // --- Team CRUD ---
 
@@ -8,7 +7,7 @@ export const getTeams = async (userId?: string): Promise<Team[]> => {
     // Fetch teams. If userId provided, we could verify membership, but for now let's just get all
     // and let UI map "isJoined" status if complex query needed. 
     // Ideally, we start with simple fetch.
-    
+
     const { data, error } = await supabase
         .from('teams')
         .select(`
@@ -42,12 +41,12 @@ export const getTeamById = async (id: string): Promise<Team | null> => {
         `)
         .eq('id', id)
         .single();
-    
+
     if (error) {
         console.error(`Error fetching team ${id}:`, error);
         return null;
     }
-    
+
     return data;
 };
 
@@ -63,13 +62,13 @@ export const getTeamByShareToken = async (token: string): Promise<Team | null> =
             )
         `)
         .contains('share_tokens', JSON.stringify([{ token, revoked: false }]))
-        .maybeSingle(); 
-    
+        .maybeSingle();
+
     if (error) {
         console.error(`Error fetching team by share token:`, error);
         return null;
     }
-    
+
     return data;
 };
 
@@ -121,8 +120,8 @@ export const createTeam = async (team: Partial<Team>): Promise<Team | null> => {
 // --- Membership ---
 
 export const addTeamMember = async (
-    teamId: string, 
-    memberId: string, 
+    teamId: string,
+    memberId: string,
     role: 'member' | 'admin' | 'lead' = 'member',
     options?: { custom_title?: string, permissions?: string[] }
 ): Promise<boolean> => {
@@ -144,8 +143,8 @@ export const addTeamMember = async (
 };
 
 export const updateTeamMember = async (
-    teamId: string, 
-    memberId: string, 
+    teamId: string,
+    memberId: string,
     updates: { role?: 'member' | 'admin' | 'lead', custom_title?: string, permissions?: string[] }
 ): Promise<boolean> => {
     const { error } = await supabase
@@ -211,14 +210,14 @@ export const getTeamTasks = async (teamId: string) => {
 
 // Fetch assignments of a specific task within the team
 export const getTaskAssignments = async (taskId: string) => {
-     const { data, error } = await supabase
+    const { data, error } = await supabase
         .from('member_tasks')
         .select(`
             *,
             member:profiles(fullname, avatar_url)
         `)
         .eq('task_id', taskId);
-    
+
     if (error) throw error;
     return data;
 };
@@ -245,4 +244,109 @@ export const getMemberTeams = async (memberId: string): Promise<Team[]> => {
         my_role: item.role,
         is_member: true
     }));
+};
+
+// --- Milestones ---
+
+export const getTeamMilestones = async (teamId: string): Promise<TeamMilestone[]> => {
+    const { data, error } = await supabase
+        .from('team_milestones')
+        .select('*')
+        .eq('team_id', teamId)
+        .order('due_date', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching team milestones:', error);
+        return [];
+    }
+    return data;
+};
+
+export const createTeamMilestone = async (milestone: Partial<TeamMilestone>): Promise<void> => {
+    const { error } = await supabase.from('team_milestones').insert(milestone);
+    if (error) throw error;
+};
+
+export const updateTeamMilestone = async (id: string, updates: Partial<TeamMilestone>): Promise<void> => {
+    const { error } = await supabase.from('team_milestones').update(updates).eq('id', id);
+    if (error) throw error;
+};
+
+export const deleteTeamMilestone = async (id: string): Promise<void> => {
+    const { error } = await supabase.from('team_milestones').delete().eq('id', id);
+    if (error) throw error;
+};
+
+// --- Documents ---
+
+export const getTeamDocuments = async (teamId: string): Promise<TeamDocument[]> => {
+    const { data, error } = await supabase
+        .from('team_documents')
+        .select(`
+            *,
+            uploader:profiles(id, fullname, avatar_url)
+        `)
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching team documents:', error);
+        return [];
+    }
+    return data;
+};
+
+export const uploadTeamDocumentFile = async (teamId: string, memberId: string, file: File): Promise<void> => {
+    // 1. Upload file to Supabase Storage matching RLS requirements
+    // For local dev, checking if target bucket exists, if not we'll handle gracefully.
+    // In actual implementation, bucket "team-documents" should exist and be public/auth-read.
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${teamId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from('team-documents')
+        .upload(filePath, file);
+
+    if (uploadError) {
+        throw new Error(uploadError.message);
+    }
+
+    const { data } = supabase.storage.from('team-documents').getPublicUrl(filePath);
+    const fileUrl = data.publicUrl;
+
+    // 2. Insert record into database
+    const { error: dbError } = await supabase
+        .from('team_documents')
+        .insert({
+            team_id: teamId,
+            member_id: memberId,
+            file_name: file.name,
+            file_type: fileExt || 'file',
+            file_size_bytes: file.size,
+            file_url: fileUrl
+        });
+
+    if (dbError) {
+        // Cleanup storage on DB fail if possible
+        await supabase.storage.from('team-documents').remove([filePath]);
+        throw dbError;
+    }
+};
+
+export const deleteTeamDocument = async (id: string, fileUrl: string): Promise<void> => {
+    // 1. Delete DB record (Storage cleanup could be done here or in via trigger)
+    const { error } = await supabase.from('team_documents').delete().eq('id', id);
+    if (error) throw error;
+
+    // Optional: parse URL and delete exactly from bucket.
+    try {
+        const urlParts = fileUrl.split('/team-documents/');
+        if (urlParts.length > 1) {
+            const path = urlParts[1];
+            await supabase.storage.from('team-documents').remove([path]);
+        }
+    } catch (e) {
+        console.error("Cleanup failed:", e);
+    }
 };
